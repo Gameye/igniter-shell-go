@@ -1,0 +1,40 @@
+{
+    "initialState": "Off",
+    "states": {
+        "On": {
+            "events": [
+                {
+                    "type": "literal",
+                    "value": "SwitchOff",
+                    "nextState": "Off"
+                },
+                {
+                    "type": "timer",
+                    "interval": 1000,
+                    "nextState": "Off"
+                }
+            ]
+        },
+        "Off": {
+            "events": [
+                {
+                    "type": "regex",
+                    "pattern": "^SwitchOn$",
+                    "nextState": "On"
+                }
+            ]
+        }
+    },
+    "transitions": [
+        {
+            "from": "Off",
+            "to": "On",
+            "command": "DoSwitchOn"
+        },
+        {
+            "from": "On",
+            "to": "Off",
+            "command": "DoSwitchOff"
+        }
+    ]
+}
