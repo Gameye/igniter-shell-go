@@ -58,17 +58,12 @@ func runWithStateMachine(
 	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
 	defer close(stateChanges)
 
-	go func() {
-		for stateChange := range stateChanges {
-			inputLines <- stateChange.Command
-		}
-	}()
-
 	err = attachCommand(cmd, outputLines, inputLines)
 	if err != nil {
 		return
 	}
 
+	go passStateChange(inputLines, stateChanges)
 	go statemachine.Run(config, stateChanges, outputLines)
 
 	exit, err = runCommand(cmd)
@@ -193,6 +188,15 @@ func passSignals(
 		}
 	}
 	return
+}
+
+func passStateChange(
+	inputLines chan<- string,
+	stateChanges <-chan statemachine.StateChange,
+) {
+	for stateChange := range stateChanges {
+		inputLines <- stateChange.Command
+	}
 }
 
 func makeTestConfig() (
