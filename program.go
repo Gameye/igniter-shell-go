@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -14,10 +13,10 @@ import (
 	"github.com/elmerbulthuis/shell-go/statemachine"
 )
 
-const outputBuffer = 100
-const inputBuffer = 100
-const signalBuffer = 100
-const stateChangeBuffer = 100
+const outputBuffer = 20
+const inputBuffer = 20
+const signalBuffer = 20
+const stateChangeBuffer = 20
 
 func main() {
 	exit, err := run()
@@ -32,30 +31,47 @@ func run() (
 	exit int,
 	err error,
 ) {
+	cmd := exec.Command("bash")
+	config := makeTestConfig()
+
+	exit, err = runWithStateMachine(cmd, config)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func runWithStateMachine(
+	cmd *exec.Cmd,
+	config *statemachine.Config,
+) (
+	exit int,
+	err error,
+) {
 	outputLines := make(chan string, outputBuffer)
 	defer close(outputLines)
 
 	inputLines := make(chan string, inputBuffer)
 	defer close(inputLines)
 
-	cmd := exec.Command("bash")
+	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
+	defer close(stateChanges)
 
 	go func() {
-		for line := range outputLines {
-			fmt.Println("> " + line)
+		for stateChange := range stateChanges {
+			inputLines <- stateChange.Command
 		}
 	}()
-
-	// inputLines <- "echo abc"
-	// inputLines <- "echo xyz"
 
 	err = attachCommand(cmd, outputLines, inputLines)
 	if err != nil {
 		return
 	}
 
-	config := makeTestConfig()
-	exit, err = runCommand(config, cmd, outputLines, inputLines)
+	go statemachine.Run(config, stateChanges, outputLines)
+
+	exit, err = runCommand(cmd)
 	if err != nil {
 		return
 	}
@@ -64,17 +80,11 @@ func run() (
 }
 
 func runCommand(
-	config *statemachine.Config,
 	cmd *exec.Cmd,
-	outputLines chan<- string,
-	inputLines <-chan string,
 ) (
 	exit int,
 	err error,
 ) {
-	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
-	defer close(stateChanges)
-
 	signals := make(chan os.Signal, signalBuffer)
 	defer close(signals)
 
@@ -87,12 +97,6 @@ func runCommand(
 	}
 
 	go passSignals(cmd.Process, signals)
-	go func() {
-		for stateChange := range stateChanges {
-			outputLines <- stateChange.Command
-		}
-	}()
-	go statemachine.Run(config, stateChanges, inputLines)
 
 	err = cmd.Wait()
 	if exitErr, ok := err.(*exec.ExitError); ok {
