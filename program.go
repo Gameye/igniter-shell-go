@@ -63,7 +63,7 @@ func runWithStateMachine(
 		return
 	}
 
-	go passStateChange(inputLines, stateChanges)
+	go passStateChanges(inputLines, stateChanges)
 	go statemachine.Run(config, stateChanges, outputLines)
 
 	exit, err = runCommand(cmd)
@@ -190,7 +190,7 @@ func passSignals(
 	return
 }
 
-func passStateChange(
+func passStateChanges(
 	inputLines chan<- string,
 	stateChanges <-chan statemachine.StateChange,
 ) {
@@ -209,7 +209,7 @@ func makeTestConfig() (
 				Events: []statemachine.EventStateConfig{
 					statemachine.TimerEventConfig{
 						NextState: "Off",
-						Interval:  time.Second * 1,
+						Interval:  time.Millisecond * 300,
 					},
 				},
 			},
@@ -217,7 +217,7 @@ func makeTestConfig() (
 				Events: []statemachine.EventStateConfig{
 					statemachine.TimerEventConfig{
 						NextState: "On",
-						Interval:  time.Second * 1,
+						Interval:  time.Millisecond * 300,
 					},
 				},
 			},
