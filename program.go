@@ -58,9 +58,6 @@ func runWithStateMachine(
 	signal.Notify(signals)
 	defer signal.Stop(signals)
 
-	outputLines := make(chan string, outputBuffer)
-	defer close(outputLines)
-
 	inputLines := make(chan string, inputBuffer)
 	defer close(inputLines)
 
@@ -68,6 +65,10 @@ func runWithStateMachine(
 	defer close(stateChanges)
 
 	go passStateChanges(inputLines, stateChanges)
+
+	outputLines := make(chan string, outputBuffer)
+	defer close(outputLines)
+
 	go statemachine.Run(config, stateChanges, outputLines)
 
 	if withPty {
