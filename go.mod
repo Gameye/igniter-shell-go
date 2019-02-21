@@ -1,3 +1,6 @@
 module github.com/elmerbulthuis/shell-go
 
-require github.com/stretchr/testify v1.3.0
+require (
+	github.com/kr/pty v1.1.3
+	github.com/stretchr/testify v1.3.0
+)

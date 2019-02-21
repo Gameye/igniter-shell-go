@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kr/pty"
+
 	"github.com/elmerbulthuis/shell-go/statemachine"
 )
 
@@ -34,7 +36,7 @@ func runTf2() (
 	cmd := exec.Command("docker", "run", "-ti", "docker.gameye.com/tf2")
 	config := makeTf2Config()
 
-	exit, err = runWithStateMachine(cmd, config)
+	exit, err = runWithStateMachine(cmd, config, true)
 	if err != nil {
 		return
 	}
@@ -45,6 +47,7 @@ func runTf2() (
 func runWithStateMachine(
 	cmd *exec.Cmd,
 	config *statemachine.Config,
+	withPty bool,
 ) (
 	exit int,
 	err error,
@@ -58,17 +61,24 @@ func runWithStateMachine(
 	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
 	defer close(stateChanges)
 
-	err = attachCommand(cmd, outputLines, inputLines)
-	if err != nil {
-		return
-	}
-
 	go passStateChanges(inputLines, stateChanges)
 	go statemachine.Run(config, stateChanges, outputLines)
 
-	exit, err = runCommand(cmd)
-	if err != nil {
-		return
+	if withPty {
+		exit, err = runCommandPTY(cmd, outputLines, inputLines)
+		if err != nil {
+			return
+		}
+	} else {
+		err = attachCommand(cmd, outputLines, inputLines)
+		if err != nil {
+			return
+		}
+
+		exit, err = runCommand(cmd)
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -109,6 +119,53 @@ func runCommand(
 	return
 }
 
+func runCommandPTY(
+	cmd *exec.Cmd,
+	outputLines chan<- string,
+	inputLines <-chan string,
+) (
+	exit int,
+	err error,
+) {
+	signals := make(chan os.Signal, signalBuffer)
+	defer close(signals)
+
+	signal.Notify(signals)
+	defer signal.Stop(signals)
+
+	ptyStream, err := pty.Start(cmd)
+	if err != nil {
+		return
+	}
+
+	pipeReader, pipeWriter := io.Pipe()
+
+	ptyTee := io.TeeReader(ptyStream, pipeWriter)
+
+	go readLines(ptyTee, outputLines)
+	go writeLines(ptyStream, inputLines)
+
+	go passSignals(cmd.Process, signals)
+
+	go io.Copy(os.Stdout, pipeReader)
+	go io.Copy(ptyStream, os.Stdin)
+
+	err = cmd.Wait()
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+			err = nil
+			exit = status.ExitStatus()
+			return
+		}
+	}
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func attachCommand(
 	cmd *exec.Cmd,
 	outputLines chan<- string,
@@ -132,11 +189,11 @@ func attachCommand(
 	stdoutPipeReader, stdoutPipeWriter := io.Pipe()
 	stderrPipeReader, stderrPipeWriter := io.Pipe()
 
-	stdoutBufferedReader := bufio.NewReader(io.TeeReader(stdout, stdoutPipeWriter))
-	stderrBufferedReader := bufio.NewReader(io.TeeReader(stderr, stderrPipeWriter))
+	stdoutTee := io.TeeReader(stdout, stdoutPipeWriter)
+	stderrTee := io.TeeReader(stderr, stderrPipeWriter)
 
-	go readLines(stdoutBufferedReader, outputLines)
-	go readLines(stderrBufferedReader, outputLines)
+	go readLines(stdoutTee, outputLines)
+	go readLines(stderrTee, outputLines)
 	go writeLines(stdin, inputLines)
 
 	go io.Copy(os.Stdout, stdoutPipeReader)
@@ -147,12 +204,14 @@ func attachCommand(
 }
 
 func readLines(
-	reader *bufio.Reader,
+	reader io.Reader,
 	lines chan<- string,
 ) (err error) {
+	bufferedReader := bufio.NewReader(reader)
+
 	var line string
 	for {
-		line, err = reader.ReadString('\n')
+		line, err = bufferedReader.ReadString('\n')
 		if err != nil {
 			return
 		}
@@ -247,7 +306,7 @@ func makeTf2Config() (
 				Events: []statemachine.EventStateConfig{
 					statemachine.LiteralEventConfig{
 						NextState:  "end",
-						Value:      "'server.cfg' not present; not executing.",
+						Value:      "Unknown command \"startupmenu\"",
 						IgnoreCase: true,
 					},
 				},
@@ -264,7 +323,7 @@ func makeTf2Config() (
 		Transitions: []statemachine.TransitionConfig{
 			statemachine.TransitionConfig{
 				To:      "end",
-				Command: "echo 'Quit in 10 seconds'",
+				Command: "echo Quitting",
 			},
 			statemachine.TransitionConfig{
 				To:      "quit",
