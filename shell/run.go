@@ -28,6 +28,11 @@ func RunWithStateMachine(
 	exit int,
 	err error,
 ) {
+	/*
+		This order matters! Mostly because of the deferred closing of
+		the channels. Changing this ordder might cause a panic for writing
+		to a closed channel (so please, don't).
+	*/
 	signals := make(chan os.Signal, signalBuffer)
 	defer close(signals)
 
@@ -40,11 +45,12 @@ func RunWithStateMachine(
 	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
 	defer close(stateChanges)
 
-	go passStateChanges(inputLines, stateChanges)
-
 	outputLines := make(chan string, outputBuffer)
 	defer close(outputLines)
+	/*
+	 */
 
+	go passStateChanges(inputLines, stateChanges)
 	go statemachine.Run(config, stateChanges, outputLines)
 
 	if withPty {
