@@ -14,7 +14,7 @@ import (
 	"github.com/elmerbulthuis/shell-go/statemachine"
 )
 
-const outputBuffer = 20
+const outputBuffer = 200
 const inputBuffer = 20
 const signalBuffer = 20
 const stateChangeBuffer = 20
