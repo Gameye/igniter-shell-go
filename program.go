@@ -19,7 +19,7 @@ const signalBuffer = 20
 const stateChangeBuffer = 20
 
 func main() {
-	exit, err := run()
+	exit, err := runTf2()
 	if err != nil {
 		panic(err)
 	}
@@ -27,12 +27,12 @@ func main() {
 	os.Exit(exit)
 }
 
-func run() (
+func runTf2() (
 	exit int,
 	err error,
 ) {
-	cmd := exec.Command("bash")
-	config := makeTestConfig()
+	cmd := exec.Command("docker", "run", "-ti", "docker.gameye.com/tf2")
+	config := makeTf2Config()
 
 	exit, err = runWithStateMachine(cmd, config)
 	if err != nil {
@@ -230,6 +230,45 @@ func makeTestConfig() (
 			statemachine.TransitionConfig{
 				To:      "Off",
 				Command: "echo off",
+			},
+		},
+	}
+
+	return
+}
+
+func makeTf2Config() (
+	config *statemachine.Config,
+) {
+	config = &statemachine.Config{
+		InitialState: "idle",
+		States: map[string]statemachine.StateConfig{
+			"idle": statemachine.StateConfig{
+				Events: []statemachine.EventStateConfig{
+					statemachine.LiteralEventConfig{
+						NextState:  "end",
+						Value:      "'server.cfg' not present; not executing.",
+						IgnoreCase: true,
+					},
+				},
+			},
+			"end": statemachine.StateConfig{
+				Events: []statemachine.EventStateConfig{
+					statemachine.TimerEventConfig{
+						NextState: "quit",
+						Interval:  time.Second * 10,
+					},
+				},
+			},
+		},
+		Transitions: []statemachine.TransitionConfig{
+			statemachine.TransitionConfig{
+				To:      "end",
+				Command: "echo 'Quit in 10 seconds'",
+			},
+			statemachine.TransitionConfig{
+				To:      "quit",
+				Command: "quit",
 			},
 		},
 	}
