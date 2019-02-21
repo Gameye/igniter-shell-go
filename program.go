@@ -106,15 +106,7 @@ func runCommand(
 
 	go passSignals(cmd.Process, signals)
 
-	err = cmd.Wait()
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			err = nil
-			exit = status.ExitStatus()
-			return
-		}
-	}
-
+	exit, err = waitCommand(cmd)
 	if err != nil {
 		return
 	}
@@ -148,15 +140,7 @@ func runCommandPTY(
 	go io.Copy(os.Stdout, pipeReader)
 	go io.Copy(ptyStream, os.Stdin)
 
-	err = cmd.Wait()
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			err = nil
-			exit = status.ExitStatus()
-			return
-		}
-	}
-
+	exit, err = waitCommand(cmd)
 	if err != nil {
 		return
 	}
@@ -197,6 +181,28 @@ func attachCommand(
 	go io.Copy(os.Stdout, stdoutPipeReader)
 	go io.Copy(os.Stderr, stderrPipeReader)
 	go io.Copy(stdin, os.Stdin)
+
+	return
+}
+
+func waitCommand(
+	cmd *exec.Cmd,
+) (
+	exit int,
+	err error,
+) {
+	err = cmd.Wait()
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+			err = nil
+			exit = status.ExitStatus()
+			return
+		}
+	}
+
+	if err != nil {
+		return
+	}
 
 	return
 }
