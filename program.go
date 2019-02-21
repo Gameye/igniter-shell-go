@@ -52,6 +52,12 @@ func runWithStateMachine(
 	exit int,
 	err error,
 ) {
+	signals := make(chan os.Signal, signalBuffer)
+	defer close(signals)
+
+	signal.Notify(signals)
+	defer signal.Stop(signals)
+
 	outputLines := make(chan string, outputBuffer)
 	defer close(outputLines)
 
@@ -65,17 +71,12 @@ func runWithStateMachine(
 	go statemachine.Run(config, stateChanges, outputLines)
 
 	if withPty {
-		exit, err = runCommandPTY(cmd, outputLines, inputLines)
+		exit, err = runCommandPTY(cmd, outputLines, inputLines, signals)
 		if err != nil {
 			return
 		}
 	} else {
-		err = attachCommand(cmd, outputLines, inputLines)
-		if err != nil {
-			return
-		}
-
-		exit, err = runCommand(cmd)
+		exit, err = runCommand(cmd, outputLines, inputLines, signals)
 		if err != nil {
 			return
 		}
@@ -86,15 +87,17 @@ func runWithStateMachine(
 
 func runCommand(
 	cmd *exec.Cmd,
+	outputLines chan<- string,
+	inputLines <-chan string,
+	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
 ) {
-	signals := make(chan os.Signal, signalBuffer)
-	defer close(signals)
-
-	signal.Notify(signals)
-	defer signal.Stop(signals)
+	err = attachCommand(cmd, outputLines, inputLines)
+	if err != nil {
+		return
+	}
 
 	err = cmd.Start()
 	if err != nil {
@@ -123,20 +126,17 @@ func runCommandPTY(
 	cmd *exec.Cmd,
 	outputLines chan<- string,
 	inputLines <-chan string,
+	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
 ) {
-	signals := make(chan os.Signal, signalBuffer)
-	defer close(signals)
-
-	signal.Notify(signals)
-	defer signal.Stop(signals)
-
 	ptyStream, err := pty.Start(cmd)
 	if err != nil {
 		return
 	}
+
+	go passSignals(cmd.Process, signals)
 
 	pipeReader, pipeWriter := io.Pipe()
 
@@ -144,8 +144,6 @@ func runCommandPTY(
 
 	go readLines(ptyTee, outputLines)
 	go writeLines(ptyStream, inputLines)
-
-	go passSignals(cmd.Process, signals)
 
 	go io.Copy(os.Stdout, pipeReader)
 	go io.Copy(ptyStream, os.Stdin)
