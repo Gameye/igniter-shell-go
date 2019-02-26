@@ -1,4 +1,4 @@
-package utils
+package shell
 
 import (
 	"bufio"
@@ -9,24 +9,35 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/kr/pty"
+
 	"github.com/elmerbulthuis/shell-go/statemachine"
 )
 
-const outputBuffer = 20
+const outputBuffer = 200
 const inputBuffer = 20
 const signalBuffer = 20
 const stateChangeBuffer = 20
 
-// RunWithStateMachine run a exec.Cmd with state machine config
+// RunWithStateMachine runs a command
 func RunWithStateMachine(
 	cmd *exec.Cmd,
 	config *statemachine.Config,
+	withPty bool,
 ) (
 	exit int,
 	err error,
 ) {
-	outputLines := make(chan string, outputBuffer)
-	defer close(outputLines)
+	/*
+		This order matters! Mostly because of the deferred closing of
+		the channels. Changing this ordder might cause a panic for writing
+		to a closed channel (so please, don't).
+	*/
+	signals := make(chan os.Signal, signalBuffer)
+	defer close(signals)
+
+	signal.Notify(signals)
+	defer signal.Stop(signals)
 
 	inputLines := make(chan string, inputBuffer)
 	defer close(inputLines)
@@ -34,17 +45,24 @@ func RunWithStateMachine(
 	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
 	defer close(stateChanges)
 
-	err = attachCommand(cmd, outputLines, inputLines)
-	if err != nil {
-		return
-	}
+	outputLines := make(chan string, outputBuffer)
+	defer close(outputLines)
+	/*
+	 */
 
 	go passStateChanges(inputLines, stateChanges)
 	go statemachine.Run(config, stateChanges, outputLines)
 
-	exit, err = runCommand(cmd)
-	if err != nil {
-		return
+	if withPty {
+		exit, err = runCommandPTY(cmd, outputLines, inputLines, signals)
+		if err != nil {
+			return
+		}
+	} else {
+		exit, err = runCommand(cmd, outputLines, inputLines, signals)
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -52,15 +70,17 @@ func RunWithStateMachine(
 
 func runCommand(
 	cmd *exec.Cmd,
+	outputLines chan<- string,
+	inputLines <-chan string,
+	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
 ) {
-	signals := make(chan os.Signal, signalBuffer)
-	defer close(signals)
-
-	signal.Notify(signals)
-	defer signal.Stop(signals)
+	err = attachCommand(cmd, outputLines, inputLines)
+	if err != nil {
+		return
+	}
 
 	err = cmd.Start()
 	if err != nil {
@@ -69,15 +89,41 @@ func runCommand(
 
 	go passSignals(cmd.Process, signals)
 
-	err = cmd.Wait()
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			err = nil
-			exit = status.ExitStatus()
-			return
-		}
+	exit, err = waitCommand(cmd)
+	if err != nil {
+		return
 	}
 
+	return
+}
+
+func runCommandPTY(
+	cmd *exec.Cmd,
+	outputLines chan<- string,
+	inputLines <-chan string,
+	signals <-chan os.Signal,
+) (
+	exit int,
+	err error,
+) {
+	ptyStream, err := pty.Start(cmd)
+	if err != nil {
+		return
+	}
+
+	go passSignals(cmd.Process, signals)
+
+	pipeReader, pipeWriter := io.Pipe()
+
+	ptyTee := io.TeeReader(ptyStream, pipeWriter)
+
+	go readLines(ptyTee, outputLines)
+	go writeLines(ptyStream, inputLines)
+
+	go io.Copy(os.Stdout, pipeReader)
+	go io.Copy(ptyStream, os.Stdin)
+
+	exit, err = waitCommand(cmd)
 	if err != nil {
 		return
 	}
@@ -108,11 +154,11 @@ func attachCommand(
 	stdoutPipeReader, stdoutPipeWriter := io.Pipe()
 	stderrPipeReader, stderrPipeWriter := io.Pipe()
 
-	stdoutBufferedReader := bufio.NewReader(io.TeeReader(stdout, stdoutPipeWriter))
-	stderrBufferedReader := bufio.NewReader(io.TeeReader(stderr, stderrPipeWriter))
+	stdoutTee := io.TeeReader(stdout, stdoutPipeWriter)
+	stderrTee := io.TeeReader(stderr, stderrPipeWriter)
 
-	go readLines(stdoutBufferedReader, outputLines)
-	go readLines(stderrBufferedReader, outputLines)
+	go readLines(stdoutTee, outputLines)
+	go readLines(stderrTee, outputLines)
 	go writeLines(stdin, inputLines)
 
 	go io.Copy(os.Stdout, stdoutPipeReader)
@@ -122,13 +168,37 @@ func attachCommand(
 	return
 }
 
+func waitCommand(
+	cmd *exec.Cmd,
+) (
+	exit int,
+	err error,
+) {
+	err = cmd.Wait()
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+			err = nil
+			exit = status.ExitStatus()
+			return
+		}
+	}
+
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func readLines(
-	reader *bufio.Reader,
+	reader io.Reader,
 	lines chan<- string,
 ) (err error) {
+	bufferedReader := bufio.NewReader(reader)
+
 	var line string
 	for {
-		line, err = reader.ReadString('\n')
+		line, err = bufferedReader.ReadString('\n')
 		if err != nil {
 			return
 		}

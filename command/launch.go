@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/elmerbulthuis/shell-go/shell"
 	"github.com/elmerbulthuis/shell-go/utils"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +24,7 @@ func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
 	proc := exec.Command("docker", "run", "-ti", "docker.gameye.com/tf2")
 	config := utils.MakeTf2Config()
 
-	exit, err := utils.RunWithStateMachine(proc, config)
+	exit, err := shell.RunWithStateMachine(proc, config, true)
 	if err != nil {
 		return
 	}
