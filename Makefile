@@ -5,7 +5,8 @@ MODULE=github.com/elmerbulthuis/shell-go
 
 GO_SRC=*.go */*.go
 BIN=\
-	gameye-shell \
+	gameye-shell-linux-amd64 \
+	gameye-shell-darwin-amd64 \
 
 BIN_TARGET=$(addprefix bin/,${BIN})
 
@@ -18,7 +19,11 @@ clean:
 
 build: ${BIN_TARGET}
 
-${BIN_TARGET}: $(GO_SRC)
+bin/gameye-shell-linux-amd64: export GOOS=linux
+bin/gameye-shell-linux-amd64: export GOARCH=amd64
+bin/gameye-shell-darwin-amd64: export GOOS=darwin
+bin/gameye-shell-darwin-amd64: export GOARCH=amd64
+bin/gameye-shell-%: $(GO_SRC)
 	go build \
 		-o $@ \
 		-ldflags=" \

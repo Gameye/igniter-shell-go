@@ -1,6 +1,7 @@
 module github.com/elmerbulthuis/shell-go
 
 require (
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/kr/pty v1.1.3
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.3
