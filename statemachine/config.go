@@ -123,16 +123,16 @@ type TimerEventConfig struct {
 }
 
 /*
-EventStateConfigJSON helper
+eventStateConfigJSON helper
 */
-type EventStateConfigJSON struct {
+type eventStateConfigJSON struct {
 	Payload EventStateConfig
 }
 
 /*
 UnmarshalJSON provides custom unmarshalling
 */
-func (config *EventStateConfigJSON) UnmarshalJSON(
+func (config *eventStateConfigJSON) UnmarshalJSON(
 	data []byte,
 ) (
 	err error,
