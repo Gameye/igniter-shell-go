@@ -6,7 +6,6 @@ import (
 	"os/exec"
 
 	"github.com/elmerbulthuis/shell-go/shell"
-	"github.com/elmerbulthuis/shell-go/statemachine"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +55,7 @@ func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
 
 	exit, err := shell.RunWithStateMachine(
 		proc,
-		config,
+		config.Script,
 		emulateTTY,
 	)
 	if err != nil {
@@ -71,10 +70,10 @@ func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
 func loadConfig(
 	configFile string,
 ) (
-	config *statemachine.Config,
+	config *shell.Config,
 	err error,
 ) {
-	config = &statemachine.Config{}
+	config = &shell.Config{}
 
 	file, err := os.OpenFile(configFile, os.O_RDONLY, 0)
 	if err != nil {
