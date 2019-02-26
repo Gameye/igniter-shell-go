@@ -1,4 +1,8 @@
 {
+    "defaults": {
+        "message": "xx",
+        "yay": "\\o/"
+    },
     "cmd": [
         "docker",
         "run",
@@ -9,7 +13,7 @@
     "files": [
         {
             "path": ".a/b/yay1.txt",
-            "content": "yeah!"
+            "content": "yeah!\n${yay}"
         },
         {
             "path": ".c/d/yay2.txt",

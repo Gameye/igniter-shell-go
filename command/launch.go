@@ -72,6 +72,9 @@ func runLaunchCommand(
 	}
 
 	variables := make(map[string]string)
+	for key, value := range config.Defaults {
+		variables[key] = value
+	}
 	for _, variableItem := range *variableList {
 		pair := strings.SplitN(variableItem, "=", 2)
 		variables[pair[0]] = pair[1]

@@ -8,9 +8,10 @@ import (
 Config is a configuration
 */
 type Config struct {
-	Cmd    []string             `json:"cmd"`
-	Files  []FileConfig         `json:"files"`
-	Script *statemachine.Config `json:"script"`
+	Defaults map[string]string    `json:"defaults"`
+	Cmd      []string             `json:"cmd"`
+	Files    []FileConfig         `json:"files"`
+	Script   *statemachine.Config `json:"script"`
 }
 
 /*
