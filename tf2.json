@@ -1,0 +1,33 @@
+{
+    "initialState": "idle",
+    "states": {
+        "idle": {
+            "events": [
+                {
+                    "type": "literal",
+                    "value": "'server.cfg' not present; not executing.",
+                    "nextState": "end"
+                }
+            ]
+        },
+        "end": {
+            "events": [
+                {
+                    "type": "timer",
+                    "interval": 10000,
+                    "nextState": "quit"
+                }
+            ]
+        }
+    },
+    "transitions": [
+        {
+            "to": "end",
+            "command": "echo 'Quit in 10 seconds'"
+        },
+        {
+            "to": "quit",
+            "command": "quit"
+        }
+    ]
+}
