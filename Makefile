@@ -19,10 +19,9 @@ clean:
 
 build: ${BIN_TARGET}
 
-bin/gameye-shell-linux-amd64: export GOOS=linux
-bin/gameye-shell-linux-amd64: export GOARCH=amd64
-bin/gameye-shell-darwin-amd64: export GOOS=darwin
-bin/gameye-shell-darwin-amd64: export GOARCH=amd64
+bin/gameye-shell-linux-%: export GOOS=linux
+bin/gameye-shell-darwin-%: export GOOS=darwin
+bin/gameye-shell-%-amd64: export GOARCH=amd64
 bin/gameye-shell-%: $(GO_SRC)
 	go build \
 		-o $@ \
