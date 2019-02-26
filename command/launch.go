@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var emulateTTY bool
+
 // LaunchCommand launches a process
 var LaunchCommand = &cobra.Command{
 	Use:   "launch",
@@ -18,13 +20,23 @@ var LaunchCommand = &cobra.Command{
 
 func init() {
 	RootCommand.AddCommand(LaunchCommand)
+
+	LaunchCommand.
+		PersistentFlags().
+		BoolVarP(
+			&emulateTTY,
+			"emulate-tty",
+			"t",
+			false,
+			"Emulate a TTY for the child process",
+		)
 }
 
 func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
 	proc := exec.Command(args[0], args[1:]...)
 	config := utils.MakeTf2Config()
 
-	exit, err := shell.RunWithStateMachine(proc, config, true)
+	exit, err := shell.RunWithStateMachine(proc, config, emulateTTY)
 	if err != nil {
 		return
 	}

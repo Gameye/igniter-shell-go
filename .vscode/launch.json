@@ -13,6 +13,7 @@
             "env": {},
             "args": [
                 "launch",
+                "--emulate-tty",
                 "--",
                 "docker",
                 "run",
