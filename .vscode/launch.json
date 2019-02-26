@@ -15,13 +15,7 @@
                 "launch",
                 "--emulate-tty",
                 "--config-file",
-                "tf2.json",
-                "--",
-                "docker",
-                "run",
-                "-ti",
-                "docker.gameye.com/tf2",
-                "+randommap"
+                "tf2.json"
             ]
         }
     ]

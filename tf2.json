@@ -1,4 +1,11 @@
 {
+    "cmd": [
+        "docker",
+        "run",
+        "-ti",
+        "docker.gameye.com/tf2",
+        "+randommap"
+    ],
     "script": {
         "initialState": "idle",
         "states": {
