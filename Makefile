@@ -26,7 +26,8 @@ bin/gameye-shell-%: $(GO_SRC)
 	go build \
 		-o $@ \
 		-ldflags=" \
-			-X ${MODULE}/resource.Version=${VERSION} -extldflags '-static' \
+			-X ${MODULE}/resource.Version=${VERSION} \
+			-extldflags '-static' \
 		"
 
 .PHONY: all clean build rebuild di
