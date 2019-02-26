@@ -6,6 +6,16 @@
         "docker.gameye.com/tf2",
         "+randommap"
     ],
+    "files": [
+        {
+            "path": ".a/b/yay1.txt",
+            "content": "yeah!"
+        },
+        {
+            "path": ".c/d/yay2.txt",
+            "content": "yeah?"
+        }
+    ],
     "script": {
         "initialState": "idle",
         "states": {
