@@ -2,7 +2,7 @@ package utils
 
 import "regexp"
 
-var re = regexp.MustCompile(`\$\{([\w\.])+\}`)
+var re = regexp.MustCompile(`\$\{([\w\.]+)\}`)
 
 // RenderTemplate renders a template!
 func RenderTemplate(

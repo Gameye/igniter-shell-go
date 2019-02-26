@@ -13,7 +13,7 @@
         },
         {
             "path": ".c/d/yay2.txt",
-            "content": "yeah?"
+            "content": "yeah?\n${message}"
         }
     ],
     "script": {
@@ -41,7 +41,7 @@
         "transitions": [
             {
                 "to": "end",
-                "command": "echo 'Quit in 10 seconds'"
+                "command": "echo 'Quit in 10 seconds ${message}'"
             },
             {
                 "to": "quit",

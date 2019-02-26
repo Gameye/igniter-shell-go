@@ -8,9 +8,9 @@ import (
 
 func TestRenderTemplate(t *testing.T) {
 	variables := map[string]string{
-		"a": "b",
-		"c": "d",
+		"a":  "b",
+		"cc": "d",
 	}
-	actual := RenderTemplate("${a}..${c}..${e}", variables)
+	actual := RenderTemplate("${a}..${cc}..${e}", variables)
 	assert.Equal(t, "b..d..${e}", actual)
 }

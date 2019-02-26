@@ -5,6 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+
+	"github.com/elmerbulthuis/shell-go/utils"
 
 	"github.com/elmerbulthuis/shell-go/shell"
 	"github.com/spf13/cobra"
@@ -12,6 +15,7 @@ import (
 
 var emulateTTY bool
 var configFile string
+var variableList *[]string
 
 // LaunchCommand launches a process
 var LaunchCommand = &cobra.Command{
@@ -43,6 +47,15 @@ func init() {
 			"Path to config file",
 		)
 
+	variableList = LaunchCommand.
+		PersistentFlags().
+		StringArrayP(
+			"variable",
+			"v",
+			[]string{},
+			"The variables which should be replaced in the files and the extra process arguments specified in the config. \nCan be passed multiple times for multiple variables. \nEach variable should have the format key=value",
+		)
+
 }
 
 func runLaunchCommand(
@@ -51,10 +64,23 @@ func runLaunchCommand(
 ) (
 	err error,
 ) {
-	config, err := loadConfig(configFile)
+	config, err := loadConfig(
+		configFile,
+	)
 	if err != nil {
 		return
 	}
+
+	variables := make(map[string]string)
+	for _, variableItem := range *variableList {
+		pair := strings.SplitN(variableItem, "=", 2)
+		variables[pair[0]] = pair[1]
+	}
+
+	renderConfigTemplate(
+		config,
+		variables,
+	)
 
 	for _, file := range config.Files {
 		err = writeFile(file)
@@ -63,7 +89,10 @@ func runLaunchCommand(
 		}
 	}
 
-	proc := exec.Command(config.Cmd[0], config.Cmd[1:]...)
+	proc := exec.Command(
+		config.Cmd[0],
+		config.Cmd[1:]...,
+	)
 	proc.Env = os.Environ()
 
 	exit, err := shell.RunWithStateMachine(
@@ -78,6 +107,32 @@ func runLaunchCommand(
 	os.Exit(exit)
 
 	return
+}
+
+func renderConfigTemplate(
+	config *shell.Config,
+	variables map[string]string,
+) {
+	for index := range config.Cmd {
+		config.Cmd[index] = utils.RenderTemplate(
+			config.Cmd[index],
+			variables,
+		)
+	}
+
+	for index := range config.Files {
+		config.Files[index].Content = utils.RenderTemplate(
+			config.Files[index].Content,
+			variables,
+		)
+	}
+
+	for index := range config.Script.Transitions {
+		config.Script.Transitions[index].Command = utils.RenderTemplate(
+			config.Script.Transitions[index].Command,
+			variables,
+		)
+	}
 }
 
 func loadConfig(
@@ -119,7 +174,7 @@ func writeFile(
 
 	file, err := os.OpenFile(
 		fileConfig.Path,
-		os.O_CREATE|os.O_WRONLY,
+		os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_SYNC,
 		0755,
 	)
 	if err != nil {

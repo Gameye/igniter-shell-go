@@ -15,7 +15,9 @@
                 "launch",
                 "--emulate-tty",
                 "--config-file",
-                "tf2.json"
+                "tf2.json",
+                "--variable",
+                "message==yeb="
             ]
         }
     ]
