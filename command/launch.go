@@ -21,7 +21,7 @@ func init() {
 }
 
 func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
-	proc := exec.Command("docker", "run", "-ti", "docker.gameye.com/tf2")
+	proc := exec.Command(args[0], args[1:]...)
 	config := utils.MakeTf2Config()
 
 	exit, err := shell.RunWithStateMachine(proc, config, true)

@@ -13,7 +13,12 @@
             "env": {},
             "args": [
                 "launch",
-            ],
+                "--",
+                "docker",
+                "run",
+                "-ti",
+                "docker.gameye.com/tf2"
+            ]
         }
     ]
 }
