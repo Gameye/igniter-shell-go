@@ -11,7 +11,9 @@
             "mode": "auto",
             "program": "${workspaceFolder}",
             "env": {},
-            "args": [],
+            "args": [
+                "launch",
+            ],
         }
     ]
 }
