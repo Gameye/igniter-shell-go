@@ -1,0 +1,40 @@
+{
+    "cmd": [
+        "bash"
+    ],
+    "script": {
+        "initialState": "off",
+        "states": {
+            "on": {
+                "events": [
+                    {
+                        "type": "timer",
+                        "interval": 200,
+                        "nextState": "off"
+                    }
+                ]
+            },
+            "off": {
+                "events": [
+                    {
+                        "type": "timer",
+                        "interval": 500,
+                        "nextState": "on"
+                    }
+                ]
+            }
+        },
+        "transitions": [
+            {
+                "from": "off",
+                "to": "on",
+                "command": "echo on"
+            },
+            {
+                "from": "on",
+                "to": "off",
+                "command": "echo off"
+            }
+        ]
+    }
+}
