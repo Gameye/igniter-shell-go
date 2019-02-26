@@ -45,7 +45,12 @@ func init() {
 
 }
 
-func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
+func runLaunchCommand(
+	cmd *cobra.Command,
+	args []string,
+) (
+	err error,
+) {
 	config, err := loadConfig(configFile)
 	if err != nil {
 		return
