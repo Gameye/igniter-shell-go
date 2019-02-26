@@ -68,6 +68,7 @@ func RunWithStateMachine(
 	return
 }
 
+// runCommand runs a command
 func runCommand(
 	cmd *exec.Cmd,
 	outputLines chan<- string,
@@ -97,6 +98,7 @@ func runCommand(
 	return
 }
 
+// runCommand runs a command as a pseudo terminal!
 func runCommandPTY(
 	cmd *exec.Cmd,
 	outputLines chan<- string,
@@ -131,6 +133,7 @@ func runCommandPTY(
 	return
 }
 
+// attachCommand attaches input and output channels to command (via pipes)
 func attachCommand(
 	cmd *exec.Cmd,
 	outputLines chan<- string,
@@ -168,6 +171,7 @@ func attachCommand(
 	return
 }
 
+// waitCommand waits for a command to exit and returns the exit code
 func waitCommand(
 	cmd *exec.Cmd,
 ) (
@@ -190,6 +194,7 @@ func waitCommand(
 	return
 }
 
+// readLines reads lines from a reader in a channel
 func readLines(
 	reader io.Reader,
 	lines chan<- string,
@@ -208,6 +213,7 @@ func readLines(
 	}
 }
 
+// writeLines writes lines from a channel in a writer
 func writeLines(
 	writer io.Writer,
 	lines <-chan string,
@@ -222,6 +228,7 @@ func writeLines(
 	return
 }
 
+// passSignals passes singnals from a channel to a process
 func passSignals(
 	process *os.Process,
 	signals <-chan os.Signal,
@@ -236,6 +243,8 @@ func passSignals(
 	return
 }
 
+// passStateChanges passes commands of state change structs into a
+// string channel
 func passStateChanges(
 	inputLines chan<- string,
 	stateChanges <-chan statemachine.StateChange,
