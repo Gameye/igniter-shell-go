@@ -15,7 +15,7 @@
                 "launch",
                 "--emulate-tty",
                 "--config-file",
-                "tf2.json",
+                "example/tf2.json",
                 "--variable",
                 "message==yeb="
             ]
@@ -30,7 +30,7 @@
             "args": [
                 "launch",
                 "--config-file",
-                "on-off.json"
+                "example/on-off.json"
             ]
         }
     ]
