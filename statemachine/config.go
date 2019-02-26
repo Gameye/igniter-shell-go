@@ -147,6 +147,7 @@ func (config *eventStateConfigJSON) UnmarshalJSON(
 	}
 
 	switch item.Type {
+
 	case "literal":
 		var payload LiteralEventConfig
 		err = json.Unmarshal(data, &payload)
@@ -154,6 +155,7 @@ func (config *eventStateConfigJSON) UnmarshalJSON(
 			return
 		}
 		config.Payload = payload
+
 	case "regex":
 		var payload RegexEventConfig
 		err = json.Unmarshal(data, &payload)
@@ -161,6 +163,7 @@ func (config *eventStateConfigJSON) UnmarshalJSON(
 			return
 		}
 		config.Payload = payload
+
 	case "timer":
 		var payload TimerEventConfig
 		err = json.Unmarshal(data, &payload)
@@ -168,6 +171,7 @@ func (config *eventStateConfigJSON) UnmarshalJSON(
 			return
 		}
 		config.Payload = payload
+
 	}
 
 	return
