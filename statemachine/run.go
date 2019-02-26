@@ -49,8 +49,8 @@ func Run(
 
 			case TimerEventConfig:
 				// we only use the first timer
-				if eventConfig.Interval < interval {
-					interval = eventConfig.Interval
+				if time.Duration(eventConfig.Interval) < interval {
+					interval = time.Duration(eventConfig.Interval)
 				}
 			}
 		}
@@ -205,7 +205,7 @@ func handleTimerEvent(
 ) (
 	nextState string,
 ) {
-	if interval > eventConfig.Interval {
+	if interval > time.Duration(eventConfig.Interval) {
 		nextState = eventConfig.NextState
 	}
 	return
