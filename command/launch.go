@@ -52,6 +52,7 @@ func runLaunchCommand(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	proc := exec.Command(args[0], args[1:]...)
+	proc.Env = os.Environ()
 
 	exit, err := shell.RunWithStateMachine(
 		proc,
