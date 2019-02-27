@@ -56,7 +56,7 @@ jobs:
     steps: &deploy_deb_steps
       - run: gem install package_cloud
       - attach_workspace: *attach_workspace
-      - run: cp dist/$PACKAGE.deb ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
+      - run: cp out/$PACKAGE.deb ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
       - run: >
           package_cloud push $REPOSITORY/$DISTRIBUTION ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
 
