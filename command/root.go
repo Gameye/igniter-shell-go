@@ -8,6 +8,6 @@ import (
 // RootCommand is the root command for all subcommands
 var RootCommand = &cobra.Command{
 	Use:     "igniter-shell",
-	Short:   "The gameye shell starts and configures game servers.",
+	Short:   "The Gameye igniter shell starts and configures game servers.",
 	Version: resource.Version,
 }
