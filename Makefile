@@ -38,7 +38,7 @@ bin/igniter-shell-%: $(GO_SRC)
 	cp -r package/deb/$*/* $@
 
 	@mkdir -p $@/usr/local/bin
-	cp $< $@/usr/local/bin/gameye-game-igniter
+	cp $< $@/usr/local/bin/igniter-shell
 
 	sed -i 's/Version:.*/Version: '$(VERSION:v%=%)'/' $@/DEBIAN/control
 
