@@ -1,0 +1,7 @@
+Package: gameye-shell
+Maintainer: Elmer Bulthuis <elmer@gameye.com>
+Version: 0.0.0
+Description: Gameye Game Igniter
+Architecture: amd64
+Origin: Gameye
+Distribution: bionic

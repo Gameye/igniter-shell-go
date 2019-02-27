@@ -10,14 +10,17 @@ BIN=\
 
 BIN_TARGET=$(addprefix bin/,${BIN})
 
+PACKAGE=$(addsuffix .deb,$(notdir $(wildcard package/deb/*)))
+PACKAGE_TARGET=$(addprefix out/,${PACKAGE})
+
 all: rebuild
 
 rebuild: clean build
 
 clean:
-	rm -rf bin
+	rm -rf bin out .package_tmp
 
-build: ${BIN_TARGET}
+build: ${BIN_TARGET} ${PACKAGE_TARGET}
 
 bin/gameye-shell-linux-%: export GOOS=linux
 bin/gameye-shell-darwin-%: export GOOS=darwin
@@ -30,4 +33,17 @@ bin/gameye-shell-%: $(GO_SRC)
 			-extldflags '-static' \
 		"
 
-.PHONY: all clean build rebuild di
+.package_tmp/deb/%: bin/gameye-shell-linux package/deb/%
+	@mkdir -p $@
+	cp -r package/deb/$*/* $@
+
+	@mkdir -p $@/usr/local/bin
+	cp $< $@/usr/local/bin/gameye-game-igniter
+
+	sed -i 's/Version:.*/Version: '${VERSION}'/' $@/DEBIAN/control
+
+out/%.deb:	.package_tmp/deb/%
+	@mkdir -p $(@D)
+	dpkg-deb --build $< $@
+
+.PHONY: all clean build rebuild
