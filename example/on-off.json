@@ -1,7 +1,4 @@
 {
-    "cmd": [
-        "bash"
-    ],
     "script": {
         "initialState": "off",
         "states": {

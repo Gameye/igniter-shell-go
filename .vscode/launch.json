@@ -17,7 +17,12 @@
                 "--config-file",
                 "example/tf2.json",
                 "--variable",
-                "message==yeb="
+                "message==yeb=",
+                "--",
+                "docker",
+                "run",
+                "-ti",
+                "docker.gameye.com/tf2"
             ]
         },
         {
@@ -30,7 +35,9 @@
             "args": [
                 "launch",
                 "--config-file",
-                "example/on-off.json"
+                "example/on-off.json",
+                "--",
+                "bash"
             ]
         }
     ]

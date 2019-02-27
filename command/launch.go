@@ -92,9 +92,10 @@ func runLaunchCommand(
 		}
 	}
 
+	commandArgs := append(args, config.Cmd...)
 	proc := exec.Command(
-		config.Cmd[0],
-		config.Cmd[1:]...,
+		commandArgs[0],
+		commandArgs[1:]...,
 	)
 	proc.Env = os.Environ()
 
