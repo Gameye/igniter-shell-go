@@ -38,7 +38,8 @@ jobs:
     executor: go
     steps:
       - checkout
-      - attach_workspace: *attach_workspace
+      - attach_workspace: &attach_workspace
+          at: .
       - run: make build
       - persist_to_workspace:
           root: .
