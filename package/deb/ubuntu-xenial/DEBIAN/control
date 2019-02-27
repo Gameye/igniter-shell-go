@@ -1,7 +1,7 @@
-Package: gameye-shell
+Package: igniter-shell
 Maintainer: Elmer Bulthuis <elmer@gameye.com>
 Version: 0.0.0
-Description: Gameye Game Igniter
+Description: Gameye Igniter Shell
 Architecture: amd64
 Origin: Gameye
 Distribution: xenial

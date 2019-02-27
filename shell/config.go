@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"github.com/elmerbulthuis/shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/statemachine"
 )
 
 /*

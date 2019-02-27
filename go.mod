@@ -1,4 +1,4 @@
-module github.com/elmerbulthuis/shell-go
+module github.com/Gameye/igniter-shell-go
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

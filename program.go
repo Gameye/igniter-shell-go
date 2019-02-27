@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/elmerbulthuis/shell-go/command"
+	"github.com/Gameye/igniter-shell-go/command"
 )
 
 func main() {

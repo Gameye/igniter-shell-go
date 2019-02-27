@@ -11,7 +11,7 @@ import (
 
 	"github.com/kr/pty"
 
-	"github.com/elmerbulthuis/shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/statemachine"
 )
 
 const outputBuffer = 200

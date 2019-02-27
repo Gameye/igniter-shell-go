@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/elmerbulthuis/shell-go/utils"
+	"github.com/Gameye/igniter-shell-go/utils"
 
-	"github.com/elmerbulthuis/shell-go/shell"
+	"github.com/Gameye/igniter-shell-go/shell"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var variableList *[]string
 // LaunchCommand launches a process
 var LaunchCommand = &cobra.Command{
 	Use:   "launch",
-	Short: "Start a process in the gameye-shell",
+	Short: "Start a process in the igniter-shell",
 	RunE:  runLaunchCommand,
 }
 

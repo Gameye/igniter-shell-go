@@ -1,12 +1,12 @@
 SHELL:=$(PREFIX)/bin/bash
 
 VERSION=`git describe --always`
-MODULE=github.com/elmerbulthuis/shell-go
+MODULE=github.com/Gameye/igniter-shell-go
 
 GO_SRC=*.go */*.go
 BIN=\
-	gameye-shell-linux-amd64 \
-	gameye-shell-darwin-amd64 \
+	igniter-shell-linux-amd64 \
+	igniter-shell-darwin-amd64 \
 
 BIN_TARGET=$(addprefix bin/,${BIN})
 
@@ -22,10 +22,10 @@ clean:
 
 build: ${BIN_TARGET} ${PACKAGE_TARGET}
 
-bin/gameye-shell-linux-%: export GOOS=linux
-bin/gameye-shell-darwin-%: export GOOS=darwin
-bin/gameye-shell-%-amd64: export GOARCH=amd64
-bin/gameye-shell-%: $(GO_SRC)
+bin/igniter-shell-linux-%: export GOOS=linux
+bin/igniter-shell-darwin-%: export GOOS=darwin
+bin/igniter-shell-%-amd64: export GOARCH=amd64
+bin/igniter-shell-%: $(GO_SRC)
 	go build \
 		-o $@ \
 		-ldflags=" \
@@ -33,7 +33,7 @@ bin/gameye-shell-%: $(GO_SRC)
 			-extldflags '-static' \
 		"
 
-.package_tmp/deb/%: bin/gameye-shell-linux package/deb/%
+.package_tmp/deb/%: bin/igniter-shell-linux package/deb/%
 	@mkdir -p $@
 	cp -r package/deb/$*/* $@
 
