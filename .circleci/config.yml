@@ -89,7 +89,9 @@ workflows:
   go:
     jobs:
       - lint-go: &go_job
-          filters: *filter_all
+          filters: &filters_all
+            tags:
+              only: /.*?/
       - test-go: *go_job
       - vet-go: *go_job
 
