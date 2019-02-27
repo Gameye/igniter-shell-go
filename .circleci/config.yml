@@ -1,0 +1,143 @@
+version: 2.1
+
+executors:
+  go:
+    docker:
+      - image: circleci/golang:1.11
+
+  ruby:
+    docker:
+      - image: circleci/ruby:2.5
+
+jobs:
+  codequality:
+    executor: go
+    steps:
+      - checkout
+      - run: sudo chown circleci:circleci /go/bin # Workaround for permission issue, see: https://github.com/golangci/golangci-lint/issues/250
+      - run: ./lint.sh
+
+  test:
+    executor: go
+    steps:
+      - checkout
+      - attach_workspace: &attach_workspace
+          at: .
+      - run: go get github.com/jstemmer/go-junit-report
+      - run: mkdir -p /tmp/test-results
+      - run: go test -v -coverprofile=/tmp/coverage.out -timeout 20s -race ./... | go-junit-report > /tmp/test-results/spec.xml
+      - run: go tool cover -html=/tmp/coverage.out -o /tmp/coverage.html
+      - store_test_results:
+          path: /tmp/test-results
+      - store_artifacts:
+          path: /tmp/coverage.out
+          destination: coverage.out
+      - store_artifacts:
+          path: /tmp/coverage.html
+          destination: coverage.html
+
+  build:
+    executor: go
+    steps:
+      - checkout
+      - attach_workspace: *attach_workspace
+      - run: make build dist
+      - persist_to_workspace:
+          root: .
+          paths:
+            - bin
+            - dist
+      - store_artifacts:
+          path: bin
+          destination: .
+
+  deploy-xenial-staging:
+    executor: ruby
+    environment:
+      REPOSITORY: gameye/staging
+      PACKAGE: ubuntu-xenial
+      DISTRIBUTION: ubuntu/xenial
+    steps: &deploy_deb_steps
+      - run: gem install package_cloud
+      - attach_workspace: *attach_workspace
+      - run: cp out/$PACKAGE.deb ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
+      - run: >
+          package_cloud push $REPOSITORY/$DISTRIBUTION ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
+
+  deploy-xenial-production:
+    executor: ruby
+    environment:
+      REPOSITORY: gameye/production
+      PACKAGE: ubuntu-xenial
+      DISTRIBUTION: ubuntu/xenial
+    steps: *deploy_deb_steps
+
+  deploy-bionic-staging:
+    executor: ruby
+    environment:
+      REPOSITORY: gameye/staging
+      PACKAGE: ubuntu-bionic
+      DISTRIBUTION: ubuntu/bionic
+    steps: *deploy_deb_steps
+
+  deploy-bionic-production:
+    executor: ruby
+    environment:
+      REPOSITORY: gameye/production
+      PACKAGE: ubuntu-bionic
+      DISTRIBUTION: ubuntu/bionic
+    steps: *deploy_deb_steps
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - approve-deploy:
+          type: approval
+          filters: &filters_tags
+            branches:
+              ignore: /.*?/
+            tags:
+              only:
+                # v1.0.0
+                - /^v\d+\.\d+\.\d+$/
+                # v1.0.0-1 / v1.0.0
+                - /^v\d+\.\d+\.\d+(\-\d+)?$/
+
+      - codequality:
+          filters: &filters_all
+            tags:
+              only: /.*?/
+
+      - test:
+          filters: *filters_all
+
+      - build:
+          requires: [ codequality, test ]
+          filters: *filters_tags
+
+      - deploy-xenial-staging:
+          context: packagecloud-authorized
+          requires: [ build, approve-deploy ]
+          filters: *filters_tags
+
+      - deploy-xenial-production:
+          context: packagecloud-authorized
+          requires: [ build, approve-deploy ]
+          filters: &filters_tags_production
+            branches:
+              ignore: /.*?/
+            tags:
+              only:
+                # v1.0.0
+                - /^v\d+\.\d+\.\d+$/
+
+      - deploy-bionic-staging:
+          context: packagecloud-authorized
+          requires: [ build, approve-deploy ]
+          filters: *filters_tags
+
+      - deploy-bionic-production:
+          context: packagecloud-authorized
+          requires: [ build, approve-deploy ]
+          filters: *filters_tags_production
