@@ -78,13 +78,14 @@ func Run(
 
 				action = strings.TrimSpace(action)
 
+			loop:
 				for _, eventConfigObject := range stateConfig.Events {
 					switch eventConfig := eventConfigObject.(type) {
 
 					case LiteralEventConfig:
 						nextState = handleLiteralEvent(&eventConfig, action)
 						if nextState != "" {
-							break
+							break loop
 						}
 
 					case RegexEventConfig:
@@ -93,7 +94,7 @@ func Run(
 							return
 						}
 						if nextState != "" {
-							break
+							break loop
 						}
 
 					}
