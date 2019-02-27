@@ -1,6 +1,6 @@
 SHELL:=$(PREFIX)/bin/bash
 
-VERSION=`git describe --always`
+VERSION=$(shell git describe --always)
 MODULE=github.com/Gameye/igniter-shell-go
 
 GO_SRC=*.go */*.go
@@ -40,10 +40,12 @@ bin/igniter-shell-%: $(GO_SRC)
 	@mkdir -p $@/usr/local/bin
 	cp $< $@/usr/local/bin/gameye-game-igniter
 
-	sed -i 's/Version:.*/Version: '${VERSION}'/' $@/DEBIAN/control
+	sed -i 's/Version:.*/Version: '$(VERSION:v%=%)'/' $@/DEBIAN/control
 
 out/%.deb:	.package_tmp/deb/%
 	@mkdir -p $(@D)
 	dpkg-deb --build $< $@
 
 .PHONY: all clean build rebuild
+
+.PRECIOUS: .package_tmp/deb/% bin/igniter-shell-%
