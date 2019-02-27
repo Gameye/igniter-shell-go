@@ -1,4 +1,4 @@
-# Gameye Shell
+# Gameye Igniter Shell
 
 ## Automated Tests
 NEVER commit something that breaks the build! Please link the `test.sh` script
