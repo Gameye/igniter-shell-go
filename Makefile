@@ -33,7 +33,7 @@ bin/igniter-shell-%: $(GO_SRC)
 			-extldflags '-static' \
 		"
 
-.package_tmp/deb/%: bin/igniter-shell-linux package/deb/%
+.package_tmp/deb/%: bin/igniter-shell-linux-amd64 package/deb/%
 	@mkdir -p $@
 	cp -r package/deb/$*/* $@
 
