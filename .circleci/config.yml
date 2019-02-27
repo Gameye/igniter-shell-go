@@ -10,46 +10,41 @@ executors:
       - image: circleci/ruby:2.5
 
 jobs:
-  codequality:
-    executor: go
+  lint-go:
+    docker: &docker_go
+      - image: circleci/golang:1.11
     steps:
       - checkout
-      - run: sudo chown circleci:circleci /go/bin # Workaround for permission issue, see: https://github.com/golangci/golangci-lint/issues/250
-      - run: ./lint.sh
+      - run: go get golang.org/x/lint/golint
+      - run: golint -set_exit_status ./go/...
 
-  test:
-    executor: go
+  test-go:
+    docker: *docker_go
     steps:
       - checkout
-      - attach_workspace: &attach_workspace
-          at: .
       - run: go get github.com/jstemmer/go-junit-report
       - run: mkdir -p /tmp/test-results
-      - run: go test -v -coverprofile=/tmp/coverage.out -timeout 20s -race ./... | go-junit-report > /tmp/test-results/spec.xml
-      - run: go tool cover -html=/tmp/coverage.out -o /tmp/coverage.html
+      - run: go test -v ./go/... | go-junit-report > /tmp/test-results/spec.xml
       - store_test_results:
           path: /tmp/test-results
-      - store_artifacts:
-          path: /tmp/coverage.out
-          destination: coverage.out
-      - store_artifacts:
-          path: /tmp/coverage.html
-          destination: coverage.html
 
-  build:
+  vet-go:
+    docker: *docker_go
+    steps:
+      - checkout
+      - run: go vet ./go/...
+
+  build-go:
     executor: go
     steps:
       - checkout
       - attach_workspace: *attach_workspace
-      - run: make build dist
+      - run: make build
       - persist_to_workspace:
           root: .
           paths:
             - bin
-            - dist
-      - store_artifacts:
-          path: bin
-          destination: .
+            - out
 
   deploy-xenial-staging:
     executor: ruby
@@ -60,7 +55,7 @@ jobs:
     steps: &deploy_deb_steps
       - run: gem install package_cloud
       - attach_workspace: *attach_workspace
-      - run: cp out/$PACKAGE.deb ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
+      - run: cp dist/$PACKAGE.deb ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
       - run: >
           package_cloud push $REPOSITORY/$DISTRIBUTION ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
 
@@ -90,10 +85,15 @@ jobs:
 
 workflows:
   version: 2
-  main:
+  go:
     jobs:
-      - approve-deploy:
-          type: approval
+      - lint-go: &go_job
+          filters: *filter_all
+      - test-go: *go_job
+      - vet-go: *go_job
+
+      - build-go:
+          requires: [ lint-go, test-go, vet-go ]
           filters: &filters_tags
             branches:
               ignore: /.*?/
@@ -104,26 +104,14 @@ workflows:
                 # v1.0.0-1 / v1.0.0
                 - /^v\d+\.\d+\.\d+(\-\d+)?$/
 
-      - codequality:
-          filters: &filters_all
-            tags:
-              only: /.*?/
-
-      - test:
-          filters: *filters_all
-
-      - build:
-          requires: [ codequality, test ]
-          filters: *filters_tags
-
       - deploy-xenial-staging:
           context: packagecloud-authorized
-          requires: [ build, approve-deploy ]
+          requires: [ build-go ]
           filters: *filters_tags
 
       - deploy-xenial-production:
           context: packagecloud-authorized
-          requires: [ build, approve-deploy ]
+          requires: [ build-go ]
           filters: &filters_tags_production
             branches:
               ignore: /.*?/
@@ -134,10 +122,10 @@ workflows:
 
       - deploy-bionic-staging:
           context: packagecloud-authorized
-          requires: [ build, approve-deploy ]
+          requires: [ build-go ]
           filters: *filters_tags
 
       - deploy-bionic-production:
           context: packagecloud-authorized
-          requires: [ build, approve-deploy ]
+          requires: [ build-go ]
           filters: *filters_tags_production
