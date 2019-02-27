@@ -16,7 +16,7 @@ jobs:
     steps:
       - checkout
       - run: go get golang.org/x/lint/golint
-      - run: golint -set_exit_status ./go/...
+      - run: golint -set_exit_status ./...
 
   test-go:
     docker: *docker_go
@@ -24,7 +24,7 @@ jobs:
       - checkout
       - run: go get github.com/jstemmer/go-junit-report
       - run: mkdir -p /tmp/test-results
-      - run: go test -v ./go/... | go-junit-report > /tmp/test-results/spec.xml
+      - run: go test -v ./... | go-junit-report > /tmp/test-results/spec.xml
       - store_test_results:
           path: /tmp/test-results
 
@@ -32,7 +32,7 @@ jobs:
     docker: *docker_go
     steps:
       - checkout
-      - run: go vet ./go/...
+      - run: go vet ./...
 
   build-go:
     executor: go
