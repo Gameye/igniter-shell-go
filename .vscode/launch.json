@@ -26,6 +26,25 @@
             ]
         },
         {
+            "name": "Launch controlpoint",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "env": {},
+            "args": [
+                "launch",
+                "--emulate-tty",
+                "--config-file",
+                "example/controlpoint.json",
+                "--",
+                "docker",
+                "run",
+                "-ti",
+                "docker.gameye.com/tf2"
+            ]
+        },
+        {
             "name": "Launch on-off",
             "type": "go",
             "request": "launch",
