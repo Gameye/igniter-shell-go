@@ -36,7 +36,7 @@
                 "launch",
                 "--emulate-tty",
                 "--config-file",
-                "example/controlpoint.json",
+                "example/controlpoint.yaml",
                 "--",
                 "docker",
                 "run",

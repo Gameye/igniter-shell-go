@@ -2,10 +2,13 @@ package command
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/ghodss/yaml"
 
 	"github.com/Gameye/igniter-shell-go/utils"
 
@@ -146,19 +149,14 @@ func loadConfig(
 	err error,
 ) {
 	config = &shell.Config{}
-
-	file, err := os.OpenFile(
-		configFile,
-		os.O_RDONLY,
-		0,
-	)
+	yamlData, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return
 	}
-	defer file.Close()
 
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(config)
+	jsonData, err := yaml.YAMLToJSON(yamlData)
+
+	err = json.Unmarshal(jsonData, config)
 	if err != nil {
 		return
 	}
