@@ -5,6 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch csgo",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "env": {},
+            "args": [
+                "launch",
+                "--emulate-tty",
+                "--config-file",
+                "example/csgo-esl1on1.yaml",
+                "--",
+                "docker",
+                "run",
+                "-ti",
+                "docker.gameye.com/csgo"
+            ]
+        },
+        {
             "name": "Launch tf2",
             "type": "go",
             "request": "launch",
