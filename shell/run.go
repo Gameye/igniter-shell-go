@@ -36,11 +36,12 @@ func RunWithStateMachine(
 	signals := make(chan os.Signal, signalBuffer)
 	defer close(signals)
 
+	// TODO: figure out which signals we should actually pass
 	signal.Notify(signals,
 		syscall.SIGABRT,
 		syscall.SIGALRM,
 		syscall.SIGBUS,
-		// syscall.SIGCHLD,
+		syscall.SIGCHLD,
 		syscall.SIGCLD,
 		syscall.SIGCONT,
 		syscall.SIGFPE,
@@ -157,8 +158,9 @@ func runCommandPTY(
 	defer pipeWriter.Close()
 
 	ptyTee := io.TeeReader(ptyStream, pipeWriter)
+	ptyReader := bufio.NewReader(ptyTee)
 
-	go readLines(ptyTee, outputLines)
+	go readLines(ptyReader, outputLines)
 	go writeLines(ptyStream, inputLines)
 
 	go io.Copy(os.Stdout, pipeReader)
@@ -199,8 +201,11 @@ func attachCommand(
 	stdoutTee := io.TeeReader(stdout, stdoutPipeWriter)
 	stderrTee := io.TeeReader(stderr, stderrPipeWriter)
 
-	go readLines(stdoutTee, outputLines)
-	go readLines(stderrTee, outputLines)
+	stdoutReader := bufio.NewReader(stdoutTee)
+	stderrReader := bufio.NewReader(stderrTee)
+
+	go readLines(stdoutReader, outputLines)
+	go readLines(stderrReader, outputLines)
 	go writeLines(stdin, inputLines)
 
 	go io.Copy(os.Stdout, stdoutPipeReader)
@@ -235,23 +240,18 @@ func waitCommand(
 
 // readLines reads lines from a reader in a channel
 func readLines(
-	reader io.Reader,
+	bufferedReader *bufio.Reader,
 	lines chan<- string,
 ) {
 	var err error
-	defer func() {
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	bufferedReader := bufio.NewReader(reader)
-
 	var line string
 	for {
 		line, err = bufferedReader.ReadString('\n')
-		if err != nil {
+		if err == io.EOF {
 			return
+		}
+		if err != nil {
+			panic(err)
 		}
 
 		line = strings.TrimSpace(line)
@@ -265,17 +265,14 @@ func writeLines(
 	lines <-chan string,
 ) {
 	var err error
-	defer func() {
-		if err != nil {
-			panic(err)
-		}
-	}()
-
 	var line string
 	for line = range lines {
 		_, err = io.WriteString(writer, line+"\n")
-		if err != nil {
+		if err == io.EOF {
 			return
+		}
+		if err != nil {
+			panic(err)
 		}
 	}
 	return
@@ -287,11 +284,6 @@ func passSignals(
 	signals <-chan os.Signal,
 ) {
 	var err error
-	defer func() {
-		if err != nil {
-			panic(err)
-		}
-	}()
 	var signal os.Signal
 	for signal = range signals {
 		err = process.Signal(signal)
