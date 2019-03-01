@@ -36,7 +36,43 @@ func RunWithStateMachine(
 	signals := make(chan os.Signal, signalBuffer)
 	defer close(signals)
 
-	signal.Notify(signals)
+	signal.Notify(signals,
+		syscall.SIGABRT,
+		syscall.SIGALRM,
+		syscall.SIGBUS,
+		// syscall.SIGCHLD,
+		syscall.SIGCLD,
+		syscall.SIGCONT,
+		syscall.SIGFPE,
+		syscall.SIGHUP,
+		syscall.SIGILL,
+		syscall.SIGINT,
+		syscall.SIGIO,
+		syscall.SIGIOT,
+		syscall.SIGKILL,
+		syscall.SIGPIPE,
+		syscall.SIGPOLL,
+		syscall.SIGPROF,
+		syscall.SIGPWR,
+		syscall.SIGQUIT,
+		syscall.SIGSEGV,
+		syscall.SIGSTKFLT,
+		syscall.SIGSTOP,
+		syscall.SIGSYS,
+		syscall.SIGTERM,
+		syscall.SIGTRAP,
+		syscall.SIGTSTP,
+		syscall.SIGTTIN,
+		syscall.SIGTTOU,
+		syscall.SIGUNUSED,
+		syscall.SIGURG,
+		syscall.SIGUSR1,
+		syscall.SIGUSR2,
+		syscall.SIGVTALRM,
+		syscall.SIGWINCH,
+		syscall.SIGXCPU,
+		syscall.SIGXFSZ,
+	)
 	defer signal.Stop(signals)
 
 	inputLines := make(chan string, inputBuffer)
