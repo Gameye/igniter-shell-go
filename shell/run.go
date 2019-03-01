@@ -117,6 +117,8 @@ func runCommandPTY(
 	go passSignals(cmd.Process, signals)
 
 	pipeReader, pipeWriter := io.Pipe()
+	defer pipeReader.Close()
+	defer pipeWriter.Close()
 
 	ptyTee := io.TeeReader(ptyStream, pipeWriter)
 
