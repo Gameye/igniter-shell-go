@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"os"
 	"os/exec"
@@ -19,6 +20,45 @@ const inputBuffer = 20
 const signalBuffer = 20
 const stateChangeBuffer = 20
 
+// TODO: figure out which signals we should actually pass
+var signalsToPass = []os.Signal{
+	syscall.SIGABRT,
+	syscall.SIGALRM,
+	syscall.SIGBUS,
+	syscall.SIGCHLD,
+	syscall.SIGCLD,
+	syscall.SIGCONT,
+	syscall.SIGFPE,
+	syscall.SIGHUP,
+	syscall.SIGILL,
+	syscall.SIGINT,
+	syscall.SIGIO,
+	syscall.SIGIOT,
+	syscall.SIGKILL,
+	syscall.SIGPIPE,
+	syscall.SIGPOLL,
+	syscall.SIGPROF,
+	syscall.SIGPWR,
+	syscall.SIGQUIT,
+	syscall.SIGSEGV,
+	syscall.SIGSTKFLT,
+	syscall.SIGSTOP,
+	syscall.SIGSYS,
+	syscall.SIGTERM,
+	syscall.SIGTRAP,
+	syscall.SIGTSTP,
+	syscall.SIGTTIN,
+	syscall.SIGTTOU,
+	syscall.SIGUNUSED,
+	syscall.SIGURG,
+	syscall.SIGUSR1,
+	syscall.SIGUSR2,
+	syscall.SIGVTALRM,
+	syscall.SIGWINCH,
+	syscall.SIGXCPU,
+	syscall.SIGXFSZ,
+}
+
 // RunWithStateMachine runs a command
 func RunWithStateMachine(
 	cmd *exec.Cmd,
@@ -30,51 +70,11 @@ func RunWithStateMachine(
 ) {
 	/*
 		This order matters! Mostly because of the deferred closing of
-		the channels. Changing this ordder might cause a panic for writing
-		to a closed channel (so please, don't).
+		the channels. Changing this order might cause a panic for writing
+		to a closed channel.
 	*/
-	signals := make(chan os.Signal, signalBuffer)
-	defer close(signals)
-
-	// TODO: figure out which signals we should actually pass
-	signal.Notify(signals,
-		syscall.SIGABRT,
-		syscall.SIGALRM,
-		syscall.SIGBUS,
-		syscall.SIGCHLD,
-		syscall.SIGCLD,
-		syscall.SIGCONT,
-		syscall.SIGFPE,
-		syscall.SIGHUP,
-		syscall.SIGILL,
-		syscall.SIGINT,
-		syscall.SIGIO,
-		syscall.SIGIOT,
-		syscall.SIGKILL,
-		syscall.SIGPIPE,
-		syscall.SIGPOLL,
-		syscall.SIGPROF,
-		syscall.SIGPWR,
-		syscall.SIGQUIT,
-		syscall.SIGSEGV,
-		syscall.SIGSTKFLT,
-		syscall.SIGSTOP,
-		syscall.SIGSYS,
-		syscall.SIGTERM,
-		syscall.SIGTRAP,
-		syscall.SIGTSTP,
-		syscall.SIGTTIN,
-		syscall.SIGTTOU,
-		syscall.SIGUNUSED,
-		syscall.SIGURG,
-		syscall.SIGUSR1,
-		syscall.SIGUSR2,
-		syscall.SIGVTALRM,
-		syscall.SIGWINCH,
-		syscall.SIGXCPU,
-		syscall.SIGXFSZ,
-	)
-	defer signal.Stop(signals)
+	outputLines := make(chan string, outputBuffer)
+	defer close(outputLines)
 
 	inputLines := make(chan string, inputBuffer)
 	defer close(inputLines)
@@ -82,8 +82,11 @@ func RunWithStateMachine(
 	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
 	defer close(stateChanges)
 
-	outputLines := make(chan string, outputBuffer)
-	defer close(outputLines)
+	signals := make(chan os.Signal, signalBuffer)
+	defer close(signals)
+
+	signal.Notify(signals, signalsToPass...)
+	defer signal.Stop(signals)
 	/*
 	 */
 
@@ -115,71 +118,8 @@ func runCommand(
 	exit int,
 	err error,
 ) {
-	err = attachCommand(cmd, outputLines, inputLines)
-	if err != nil {
-		return
-	}
+	// setup pipes
 
-	err = cmd.Start()
-	if err != nil {
-		return
-	}
-
-	go passSignals(cmd.Process, signals)
-
-	exit, err = waitCommand(cmd)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-// runCommand runs a command as a pseudo terminal!
-func runCommandPTY(
-	cmd *exec.Cmd,
-	outputLines chan<- string,
-	inputLines <-chan string,
-	signals <-chan os.Signal,
-) (
-	exit int,
-	err error,
-) {
-	ptyStream, err := pty.Start(cmd)
-	if err != nil {
-		return
-	}
-	defer ptyStream.Close()
-
-	go passSignals(cmd.Process, signals)
-
-	pipeReader, pipeWriter := io.Pipe()
-	defer pipeReader.Close()
-	defer pipeWriter.Close()
-
-	ptyTee := io.TeeReader(ptyStream, pipeWriter)
-	ptyReader := bufio.NewReader(ptyTee)
-
-	go readLines(ptyReader, outputLines)
-	go writeLines(ptyStream, inputLines)
-
-	go io.Copy(os.Stdout, pipeReader)
-	go io.Copy(ptyStream, os.Stdin)
-
-	exit, err = waitCommand(cmd)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-// attachCommand attaches input and output channels to command (via pipes)
-func attachCommand(
-	cmd *exec.Cmd,
-	outputLines chan<- string,
-	inputLines <-chan string,
-) (err error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return
@@ -203,6 +143,10 @@ func attachCommand(
 
 	stdoutReader := bufio.NewReader(stdoutTee)
 	stderrReader := bufio.NewReader(stderrTee)
+	defer stdoutReader.Reset(bytes.NewReader(make([]byte, 0)))
+	defer stderrReader.Reset(bytes.NewReader(make([]byte, 0)))
+
+	// connect readers, writers, channels
 
 	go readLines(stdoutReader, outputLines)
 	go readLines(stderrReader, outputLines)
@@ -211,6 +155,69 @@ func attachCommand(
 	go io.Copy(os.Stdout, stdoutPipeReader)
 	go io.Copy(os.Stderr, stderrPipeReader)
 	go io.Copy(stdin, os.Stdin)
+
+	// start the command
+
+	err = cmd.Start()
+	if err != nil {
+		return
+	}
+
+	go passSignals(cmd.Process, signals)
+
+	// wait for exit
+
+	exit, err = waitCommand(cmd)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// runCommand runs a command as a pseudo terminal!
+func runCommandPTY(
+	cmd *exec.Cmd,
+	outputLines chan<- string,
+	inputLines <-chan string,
+	signals <-chan os.Signal,
+) (
+	exit int,
+	err error,
+) {
+	// start process and get pty
+
+	ptyStream, err := pty.Start(cmd)
+	if err != nil {
+		return
+	}
+	defer ptyStream.Close()
+
+	go passSignals(cmd.Process, signals)
+
+	pipeReader, pipeWriter := io.Pipe()
+	defer pipeReader.Close()
+	defer pipeWriter.Close()
+
+	ptyTee := io.TeeReader(ptyStream, pipeWriter)
+	ptyReader := bufio.NewReader(ptyTee)
+	// stop this reader from emitting possible buffered lines
+	defer ptyReader.Reset(bytes.NewReader(make([]byte, 0)))
+
+	// connect
+
+	go readLines(ptyReader, outputLines)
+	go writeLines(ptyStream, inputLines)
+
+	go io.Copy(os.Stdout, pipeReader)
+	go io.Copy(ptyStream, os.Stdin)
+
+	// wait for exit
+
+	exit, err = waitCommand(cmd)
+	if err != nil {
+		return
+	}
 
 	return
 }
@@ -255,7 +262,9 @@ func readLines(
 		}
 
 		line = strings.TrimSpace(line)
-		lines <- line
+		if line != "" {
+			lines <- line
+		}
 	}
 }
 
