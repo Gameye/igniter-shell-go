@@ -74,7 +74,8 @@ func RunWithStateMachine(
 		to a closed channel.
 	*/
 	outputLines := make(chan string, outputBuffer)
-	defer close(outputLines)
+	// TODO: close this!
+	// defer close(outputLines)
 
 	inputLines := make(chan string, inputBuffer)
 	defer close(inputLines)
