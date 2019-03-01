@@ -10,9 +10,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kr/pty"
-
 	"github.com/Gameye/igniter-shell-go/statemachine"
+	"github.com/kr/pty"
 )
 
 const outputBuffer = 200
@@ -125,16 +124,19 @@ func runCommand(
 	if err != nil {
 		return
 	}
+	defer stdout.Close()
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return
 	}
+	defer stderr.Close()
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return
 	}
+	defer stdin.Close()
 
 	stdoutPipeReader, stdoutPipeWriter := io.Pipe()
 	stderrPipeReader, stderrPipeWriter := io.Pipe()
@@ -190,6 +192,10 @@ func runCommandPTY(
 	exit int,
 	err error,
 ) {
+	pipeReader, pipeWriter := io.Pipe()
+	defer pipeReader.Close()
+	defer pipeWriter.Close()
+
 	// start process and get pty
 
 	ptyStream, err := pty.Start(cmd)
@@ -197,12 +203,6 @@ func runCommandPTY(
 		return
 	}
 	defer ptyStream.Close()
-
-	go passSignals(cmd.Process, signals)
-
-	pipeReader, pipeWriter := io.Pipe()
-	defer pipeReader.Close()
-	defer pipeWriter.Close()
 
 	ptyTee := io.TeeReader(ptyStream, pipeWriter)
 	ptyReader := bufio.NewReader(ptyTee)
@@ -216,6 +216,8 @@ func runCommandPTY(
 
 	go io.Copy(os.Stdout, pipeReader)
 	go io.Copy(ptyStream, os.Stdin)
+
+	go passSignals(cmd.Process, signals)
 
 	// wait for exit
 
