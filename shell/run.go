@@ -199,7 +199,14 @@ func waitCommand(
 func readLines(
 	reader io.Reader,
 	lines chan<- string,
-) (err error) {
+) {
+	var err error
+	defer func() {
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	bufferedReader := bufio.NewReader(reader)
 
 	var line string
@@ -218,7 +225,14 @@ func readLines(
 func writeLines(
 	writer io.Writer,
 	lines <-chan string,
-) (err error) {
+) {
+	var err error
+	defer func() {
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	var line string
 	for line = range lines {
 		_, err = io.WriteString(writer, line+"\n")
@@ -233,7 +247,13 @@ func writeLines(
 func passSignals(
 	process *os.Process,
 	signals <-chan os.Signal,
-) (err error) {
+) {
+	var err error
+	defer func() {
+		if err != nil {
+			panic(err)
+		}
+	}()
 	var signal os.Signal
 	for signal = range signals {
 		err = process.Signal(signal)
