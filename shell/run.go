@@ -137,6 +137,10 @@ func runCommand(
 
 	stdoutPipeReader, stdoutPipeWriter := io.Pipe()
 	stderrPipeReader, stderrPipeWriter := io.Pipe()
+	defer stdoutPipeReader.Close()
+	defer stdoutPipeWriter.Close()
+	defer stderrPipeReader.Close()
+	defer stderrPipeWriter.Close()
 
 	stdoutTee := io.TeeReader(stdout, stdoutPipeWriter)
 	stderrTee := io.TeeReader(stderr, stderrPipeWriter)
