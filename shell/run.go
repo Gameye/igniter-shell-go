@@ -112,6 +112,7 @@ func runCommandPTY(
 	if err != nil {
 		return
 	}
+	defer ptyStream.Close()
 
 	go passSignals(cmd.Process, signals)
 
