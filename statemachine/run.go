@@ -1,17 +1,10 @@
 package statemachine
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 	"time"
 )
-
-/*
-ErrMissingStateConfig occurs when a state is referenced that does not
-exist in the config
-*/
-var ErrMissingStateConfig = errors.New("missing state config")
 
 /*
 StateChange contains information on a changes state
@@ -41,7 +34,7 @@ func Run(
 			// find state config
 			stateConfig, hasStateConfig := config.States[state]
 			if !hasStateConfig {
-				panic(ErrMissingStateConfig)
+				return
 			}
 
 			// setup timer event
