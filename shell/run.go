@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"bufio"
-	"bytes"
 	"io"
 	"os"
 	"os/exec"
@@ -61,18 +59,11 @@ func RunWithStateMachine(
 	exit int,
 	err error,
 ) {
-	/*
-		This order matters! Mostly because of the deferred closing of
-		the channels. Changing this order might cause a panic for writing
-		to a closed channel.
-	*/
 	signals := make(chan os.Signal, signalBuffer)
 	defer close(signals)
 
 	signal.Notify(signals, signalsToPass...)
 	defer signal.Stop(signals)
-	/*
-	 */
 
 	if withPty {
 		exit, err = runCommandPTY(cmd, config, signals)
@@ -98,9 +89,6 @@ func runCommand(
 	exit int,
 	err error,
 ) {
-	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
-	defer close(stateChanges)
-
 	// setup pipes
 
 	stdout, err := cmd.StdoutPipe()
@@ -131,19 +119,14 @@ func runCommand(
 	stdoutTee := io.TeeReader(stdout, stdoutPipeWriter)
 	stderrTee := io.TeeReader(stderr, stderrPipeWriter)
 
-	stdoutReader := bufio.NewReader(stdoutTee)
-	stderrReader := bufio.NewReader(stderrTee)
-	defer stdoutReader.Reset(bytes.NewReader(make([]byte, 0)))
-	defer stderrReader.Reset(bytes.NewReader(make([]byte, 0)))
-
 	// setup pipeline
 
-	stdoutLines := readLines(stdoutReader)
-	stderrLines := readLines(stdoutReader)
+	stdoutLines := readLines(stdoutTee)
+	stderrLines := readLines(stderrTee)
 	outputLines := mergeLines(stdoutLines, stderrLines)
 
+	stateChanges := statemachine.Run(config, outputLines)
 	inputLines := selectStateCommand(stateChanges)
-	go statemachine.Run(config, stateChanges, outputLines)
 
 	go writeLines(stdin, inputLines)
 
@@ -179,9 +162,6 @@ func runCommandPTY(
 	exit int,
 	err error,
 ) {
-	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
-	defer close(stateChanges)
-
 	pipeReader, pipeWriter := io.Pipe()
 	defer pipeReader.Close()
 	defer pipeWriter.Close()
@@ -195,16 +175,12 @@ func runCommandPTY(
 	defer ptyStream.Close()
 
 	ptyTee := io.TeeReader(ptyStream, pipeWriter)
-	ptyReader := bufio.NewReader(ptyTee)
-	// stop this reader from emitting possible buffered lines
-	defer ptyReader.Reset(bytes.NewReader(make([]byte, 0)))
 
 	// setup pipeline
 
-	outputLines := readLines(ptyReader)
-
+	outputLines := readLines(ptyTee)
+	stateChanges := statemachine.Run(config, outputLines)
 	inputLines := selectStateCommand(stateChanges)
-	go statemachine.Run(config, stateChanges, outputLines)
 
 	go writeLines(ptyStream, inputLines)
 

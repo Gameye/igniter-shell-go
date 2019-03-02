@@ -17,9 +17,10 @@ const stateChangeBuffer = 20
 
 // readLines reads lines from a reader in a channel
 func readLines(
-	bufferedReader *bufio.Reader,
+	reader io.Reader,
 ) <-chan string {
 	lines := make(chan string)
+	bufferedReader := bufio.NewReader(reader)
 
 	go func() {
 		defer close(lines)

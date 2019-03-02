@@ -10,25 +10,13 @@ import (
 func TestLightStateMachine(test *testing.T) {
 	config := makeLightTestConfig()
 
-	errorChannel := make(chan error, 1)
-	defer func() { assert.NoError(test, <-errorChannel) }()
-
-	changeChannel := make(chan StateChange, 1)
-	defer close(changeChannel)
 	actionChannel := make(chan string, 1)
 	defer close(actionChannel)
 
-	go func() (err error) {
-		defer func() { errorChannel <- err }()
-
-		err = Run(
-			config,
-			changeChannel,
-			actionChannel,
-		)
-
-		return
-	}()
+	changeChannel := Run(
+		config,
+		actionChannel,
+	)
 
 	actionChannel <- "SwitchOn"
 	assert.Equal(test, StateChange{
@@ -59,27 +47,15 @@ func TestLightStateMachine(test *testing.T) {
 func TestAutoStateMachine(test *testing.T) {
 	config := makeAutoTestConfig()
 
-	errorChannel := make(chan error, 1)
-	defer func() { assert.NoError(test, <-errorChannel) }()
-
-	changeChannel := make(chan StateChange)
-	defer close(changeChannel)
 	actionChannel := make(chan string)
 	defer close(actionChannel)
 
 	var timer *time.Timer
 
-	go func() (err error) {
-		defer func() { errorChannel <- err }()
-
-		err = Run(
-			config,
-			changeChannel,
-			actionChannel,
-		)
-
-		return
-	}()
+	changeChannel := Run(
+		config,
+		actionChannel,
+	)
 
 	actionChannel <- "noop"
 	timer = time.NewTimer(time.Second * 1)

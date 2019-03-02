@@ -26,97 +26,102 @@ Run runs a new StateMachine
 */
 func Run(
 	config *Config,
-	changeChannel chan<- StateChange,
 	actionChannel <-chan string,
-) (
-	err error,
-) {
-	state := config.InitialState
-	for {
-		start := time.Now()
+) <-chan StateChange {
+	changeChannel := make(chan StateChange)
 
-		// find state config
-		stateConfig, hasStateConfig := config.States[state]
-		if !hasStateConfig {
-			err = ErrMissingStateConfig
-			return
-		}
+	go func() {
+		defer close(changeChannel)
 
-		// setup timer event
-		interval := time.Duration(1<<63 - 1) // maxDuration from time.go:624
-		for _, eventConfigObject := range stateConfig.Events {
-			switch eventConfig := eventConfigObject.(type) {
+		state := config.InitialState
+		for {
+			var err error
+			start := time.Now()
 
-			case TimerEventConfig:
-				// we only use the first timer
-				if time.Duration(eventConfig.Interval) < interval {
-					interval = time.Duration(eventConfig.Interval)
-				}
-			}
-		}
-		timer := time.NewTimer(interval)
-
-		nextState := ""
-		for nextState == "" {
-			select {
-			case now := <-timer.C:
-				for _, eventConfigObject := range stateConfig.Events {
-					switch eventConfig := eventConfigObject.(type) {
-
-					case TimerEventConfig:
-						nextState = handleTimerEvent(&eventConfig, now.Sub(start))
-						if nextState != "" {
-							break
-						}
-					}
-				}
-
-			case action, more := <-actionChannel:
-				if !more {
-					return
-				}
-
-				action = strings.TrimSpace(action)
-
-			loop:
-				for _, eventConfigObject := range stateConfig.Events {
-					switch eventConfig := eventConfigObject.(type) {
-
-					case LiteralEventConfig:
-						nextState = handleLiteralEvent(&eventConfig, action)
-						if nextState != "" {
-							break loop
-						}
-
-					case RegexEventConfig:
-						nextState, err = handleRegexEvent(&eventConfig, action)
-						if err != nil {
-							return
-						}
-						if nextState != "" {
-							break loop
-						}
-
-					}
-				}
-
+			// find state config
+			stateConfig, hasStateConfig := config.States[state]
+			if !hasStateConfig {
+				panic(ErrMissingStateConfig)
 			}
 
+			// setup timer event
+			interval := time.Duration(1<<63 - 1) // maxDuration from time.go:624
+			for _, eventConfigObject := range stateConfig.Events {
+				switch eventConfig := eventConfigObject.(type) {
+
+				case TimerEventConfig:
+					// we only use the first timer
+					if time.Duration(eventConfig.Interval) < interval {
+						interval = time.Duration(eventConfig.Interval)
+					}
+				}
+			}
+			timer := time.NewTimer(interval)
+
+			nextState := ""
+			for nextState == "" {
+				select {
+				case now := <-timer.C:
+					for _, eventConfigObject := range stateConfig.Events {
+						switch eventConfig := eventConfigObject.(type) {
+
+						case TimerEventConfig:
+							nextState = handleTimerEvent(&eventConfig, now.Sub(start))
+							if nextState != "" {
+								break
+							}
+						}
+					}
+
+				case action, more := <-actionChannel:
+					if !more {
+						return
+					}
+
+					action = strings.TrimSpace(action)
+
+				loop:
+					for _, eventConfigObject := range stateConfig.Events {
+						switch eventConfig := eventConfigObject.(type) {
+
+						case LiteralEventConfig:
+							nextState = handleLiteralEvent(&eventConfig, action)
+							if nextState != "" {
+								break loop
+							}
+
+						case RegexEventConfig:
+							nextState, err = handleRegexEvent(&eventConfig, action)
+							if err != nil {
+								panic(err)
+							}
+							if nextState != "" {
+								break loop
+							}
+
+						}
+					}
+
+				}
+
+			}
+
+			timer.Stop()
+
+			if nextState != state {
+				pushState(
+					nextState,
+					state,
+					config,
+					changeChannel,
+				)
+				state = nextState
+			}
+
 		}
+	}()
 
-		timer.Stop()
-
-		if nextState != state {
-			pushState(
-				nextState,
-				state,
-				config,
-				changeChannel,
-			)
-			state = nextState
-		}
-
-	}
+	return changeChannel
 }
 
 func pushState(
