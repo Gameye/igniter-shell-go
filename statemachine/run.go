@@ -1,7 +1,6 @@
 package statemachine
 
 import (
-	"regexp"
 	"strings"
 	"time"
 )
@@ -28,7 +27,6 @@ func Run(
 
 		state := config.InitialState
 		for {
-			var err error
 			start := time.Now()
 
 			// find state config
@@ -84,10 +82,7 @@ func Run(
 							}
 
 						case RegexEventConfig:
-							nextState, err = handleRegexEvent(&eventConfig, action)
-							if err != nil {
-								panic(err)
-							}
+							nextState = handleRegexEvent(&eventConfig, action)
 							if nextState != "" {
 								break loop
 							}
@@ -159,7 +154,7 @@ func handleLiteralEvent(
 	nextState string,
 ) {
 	if eventConfig.IgnoreCase {
-		if eventConfig.IgnoreCase && strings.ToLower(eventConfig.Value) == strings.ToLower(action) {
+		if strings.ToLower(eventConfig.Value) == strings.ToLower(action) {
 			nextState = eventConfig.NextState
 		}
 	} else {
@@ -175,25 +170,9 @@ func handleRegexEvent(
 	action string,
 ) (
 	nextState string,
-	err error,
 ) {
-	var re *regexp.Regexp
-	if eventConfig.IgnoreCase {
-		re, err = regexp.Compile(strings.ToLower(eventConfig.Pattern))
-		if err != nil {
-			return
-		}
-		if re.MatchString(strings.ToLower(action)) {
-			nextState = eventConfig.NextState
-		}
-	} else {
-		re, err = regexp.Compile(eventConfig.Pattern)
-		if err != nil {
-			return
-		}
-		if re.MatchString(action) {
-			nextState = eventConfig.NextState
-		}
+	if eventConfig.Regexp.MatchString(action) {
+		nextState = eventConfig.NextState
 	}
 	return
 }

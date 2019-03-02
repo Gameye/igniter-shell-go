@@ -3,6 +3,7 @@ package statemachine
 import (
 	"encoding/json"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -46,14 +47,14 @@ func makeLightTestConfig() (
 					},
 					TimerEventConfig{
 						NextState: "Off",
-						Interval:  Duration(time.Second * 1),
+						Interval:  time.Duration(time.Second * 1),
 					},
 				},
 			},
 			"Off": StateConfig{
 				Events: []EventStateConfig{
 					RegexEventConfig{
-						Pattern:   "^SwitchOn$",
+						Regexp:    regexp.MustCompile("^SwitchOn$"),
 						NextState: "On",
 					},
 				},
@@ -86,7 +87,7 @@ func makeAutoTestConfig() (
 				Events: []EventStateConfig{
 					TimerEventConfig{
 						NextState: "Off",
-						Interval:  Duration(time.Second * 2),
+						Interval:  time.Duration(time.Second * 2),
 					},
 				},
 			},
@@ -94,7 +95,7 @@ func makeAutoTestConfig() (
 				Events: []EventStateConfig{
 					TimerEventConfig{
 						NextState: "On",
-						Interval:  Duration(time.Second * 2),
+						Interval:  time.Duration(time.Second * 2),
 					},
 				},
 			},

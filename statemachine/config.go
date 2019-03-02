@@ -2,33 +2,9 @@ package statemachine
 
 import (
 	"encoding/json"
+	"regexp"
 	"time"
 )
-
-/*
-Duration is a duration
-*/
-type Duration time.Duration
-
-/*
-UnmarshalJSON provides custom unmarshalling
-*/
-func (target *Duration) UnmarshalJSON(
-	data []byte,
-) (
-	err error,
-) {
-	var source float64
-
-	err = json.Unmarshal(data, &source)
-	if err != nil {
-		return
-	}
-
-	*target = Duration(time.Duration(float64(time.Millisecond) * source))
-
-	return
-}
 
 /*
 Config is the configuration for a state machine
@@ -109,17 +85,81 @@ type LiteralEventConfig struct {
 RegexEventConfig configures regex events
 */
 type RegexEventConfig struct {
-	NextState  string `json:"nextState"`
-	Pattern    string `json:"pattern"`
-	IgnoreCase bool   `json:"ignoreCase"`
+	NextState string
+	Regexp    *regexp.Regexp
+}
+
+/*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (target *RegexEventConfig) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var source struct {
+		NextState  string `json:"nextState"`
+		Pattern    string `json:"pattern"`
+		IgnoreCase bool   `json:"ignoreCase"`
+	}
+
+	err = json.Unmarshal(data, &source)
+	if err != nil {
+		return
+	}
+
+	var re *regexp.Regexp
+	if source.IgnoreCase {
+		re, err = regexp.Compile("(?i)" + source.Pattern)
+		if err != nil {
+			return
+		}
+	} else {
+		re, err = regexp.Compile(source.Pattern)
+		if err != nil {
+			return
+		}
+	}
+	*target = RegexEventConfig{
+		NextState: source.NextState,
+		Regexp:    re,
+	}
+
+	return
 }
 
 /*
 TimerEventConfig configures timer events
 */
 type TimerEventConfig struct {
-	NextState string   `json:"nextState"`
-	Interval  Duration `json:"interval"`
+	NextState string
+	Interval  time.Duration
+}
+
+/*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (target *TimerEventConfig) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var source struct {
+		NextState string  `json:"nextState"`
+		Interval  float64 `json:"interval"`
+	}
+
+	err = json.Unmarshal(data, &source)
+	if err != nil {
+		return
+	}
+
+	*target = TimerEventConfig{
+		NextState: source.NextState,
+		Interval:  time.Duration(float64(time.Millisecond) * source.Interval),
+	}
+
+	return
 }
 
 /*
