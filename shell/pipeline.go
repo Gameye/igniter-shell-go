@@ -3,6 +3,7 @@ package shell
 import (
 	"bufio"
 	"io"
+	"os"
 	"strings"
 	"sync"
 
@@ -13,7 +14,7 @@ import (
 func readLines(
 	reader io.Reader,
 ) <-chan string {
-	lines := make(chan string)
+	lines := make(chan string, 10000) // yes we need a big buffer
 	scanner := bufio.NewScanner(reader)
 
 	go func() {
@@ -29,7 +30,6 @@ func readLines(
 			}
 		}
 		err := scanner.Err()
-		// FIX: read /dev/ptmx: input/output error
 		if err != nil {
 			panic(err)
 		}
@@ -75,4 +75,37 @@ func mergeLines(cs ...<-chan string) <-chan string {
 	}()
 
 	return out
+}
+
+// passLines writes lines from a channel in a writer
+func passLines(
+	writer io.Writer,
+	lines <-chan string,
+) (
+	err error,
+) {
+	var line string
+	for line = range lines {
+		_, err = io.WriteString(writer, line+"\n")
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// passSignals passes singnals from a channel to a process
+func passSignals(
+	process *os.Process,
+	signals <-chan os.Signal,
+) {
+	var signal os.Signal
+	for signal = range signals {
+		/*
+			ignore error, possible errors include the process to be stopped
+			or not started yet.
+		*/
+		_ = process.Signal(signal)
+	}
+	return
 }
