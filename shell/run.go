@@ -66,15 +66,6 @@ func RunWithStateMachine(
 		the channels. Changing this order might cause a panic for writing
 		to a closed channel.
 	*/
-	outputLines := make(chan string, outputBuffer)
-	defer close(outputLines)
-
-	inputLines := make(chan string, inputBuffer)
-	defer close(inputLines)
-
-	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
-	defer close(stateChanges)
-
 	signals := make(chan os.Signal, signalBuffer)
 	defer close(signals)
 
@@ -83,16 +74,13 @@ func RunWithStateMachine(
 	/*
 	 */
 
-	go passStateChanges(inputLines, stateChanges)
-	go statemachine.Run(config, stateChanges, outputLines)
-
 	if withPty {
-		exit, err = runCommandPTY(cmd, outputLines, inputLines, signals)
+		exit, err = runCommandPTY(cmd, config, signals)
 		if err != nil {
 			return
 		}
 	} else {
-		exit, err = runCommand(cmd, outputLines, inputLines, signals)
+		exit, err = runCommand(cmd, config, signals)
 		if err != nil {
 			return
 		}
@@ -104,13 +92,15 @@ func RunWithStateMachine(
 // runCommand runs a command
 func runCommand(
 	cmd *exec.Cmd,
-	outputLines chan<- string,
-	inputLines <-chan string,
+	config *statemachine.Config,
 	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
 ) {
+	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
+	defer close(stateChanges)
+
 	// setup pipes
 
 	stdout, err := cmd.StdoutPipe()
@@ -146,10 +136,15 @@ func runCommand(
 	defer stdoutReader.Reset(bytes.NewReader(make([]byte, 0)))
 	defer stderrReader.Reset(bytes.NewReader(make([]byte, 0)))
 
-	// connect readers, writers, channels
+	// setup pipeline
 
-	go readLines(stdoutReader, outputLines)
-	go readLines(stderrReader, outputLines)
+	stdoutLines := readLines(stdoutReader)
+	stderrLines := readLines(stdoutReader)
+	outputLines := mergeLines(stdoutLines, stderrLines)
+
+	inputLines := selectStateCommand(stateChanges)
+	go statemachine.Run(config, stateChanges, outputLines)
+
 	go writeLines(stdin, inputLines)
 
 	go io.Copy(os.Stdout, stdoutPipeReader)
@@ -178,13 +173,15 @@ func runCommand(
 // runCommand runs a command as a pseudo terminal!
 func runCommandPTY(
 	cmd *exec.Cmd,
-	outputLines chan<- string,
-	inputLines <-chan string,
+	config *statemachine.Config,
 	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
 ) {
+	stateChanges := make(chan statemachine.StateChange, stateChangeBuffer)
+	defer close(stateChanges)
+
 	pipeReader, pipeWriter := io.Pipe()
 	defer pipeReader.Close()
 	defer pipeWriter.Close()
@@ -202,9 +199,13 @@ func runCommandPTY(
 	// stop this reader from emitting possible buffered lines
 	defer ptyReader.Reset(bytes.NewReader(make([]byte, 0)))
 
-	// connect
+	// setup pipeline
 
-	go readLines(ptyReader, outputLines)
+	outputLines := readLines(ptyReader)
+
+	inputLines := selectStateCommand(stateChanges)
+	go statemachine.Run(config, stateChanges, outputLines)
+
 	go writeLines(ptyStream, inputLines)
 
 	go io.Copy(os.Stdout, pipeReader)

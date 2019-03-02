@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/Gameye/igniter-shell-go/statemachine"
 )
@@ -17,24 +18,31 @@ const stateChangeBuffer = 20
 // readLines reads lines from a reader in a channel
 func readLines(
 	bufferedReader *bufio.Reader,
-	lines chan<- string,
-) {
-	var err error
-	var line string
-	for {
-		line, err = bufferedReader.ReadString('\n')
-		if err == io.EOF {
-			return
-		}
-		if err != nil {
-			panic(err)
-		}
+) <-chan string {
+	lines := make(chan string)
 
-		line = strings.TrimSpace(line)
-		if line != "" {
-			lines <- line
+	go func() {
+		defer close(lines)
+
+		var err error
+		var line string
+		for {
+			line, err = bufferedReader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				panic(err)
+			}
+
+			line = strings.TrimSpace(line)
+			if line != "" {
+				lines <- line
+			}
 		}
-	}
+	}()
+
+	return lines
 }
 
 // writeLines writes lines from a channel in a writer
@@ -72,13 +80,41 @@ func passSignals(
 	return
 }
 
-// passStateChanges passes commands of state change structs into a
-// string channel
-func passStateChanges(
-	inputLines chan<- string,
+func selectStateCommand(
 	stateChanges <-chan statemachine.StateChange,
-) {
-	for stateChange := range stateChanges {
-		inputLines <- stateChange.Command
+) <-chan string {
+	stateCommands := make(chan string)
+
+	go func() {
+		defer close(stateCommands)
+
+		for stateChange := range stateChanges {
+			stateCommands <- stateChange.Command
+		}
+	}()
+
+	return stateCommands
+}
+
+func mergeLines(cs ...<-chan string) <-chan string {
+	var wg sync.WaitGroup
+	out := make(chan string)
+
+	wg.Add(len(cs))
+	output := func(c <-chan string) {
+		for n := range c {
+			out <- n
+		}
+		wg.Done()
 	}
+	for _, c := range cs {
+		go output(c)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	return out
 }
