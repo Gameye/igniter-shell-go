@@ -590,7 +590,7 @@ script:
     - to: error
       command: |
         echo "Error..."
-        quit
+
 defaults:
   port.game: ''
   port.gotv: ''

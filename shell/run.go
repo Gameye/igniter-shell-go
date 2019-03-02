@@ -13,41 +13,41 @@ import (
 
 // TODO: figure out which signals we should actually pass
 var signalsToPass = []os.Signal{
-	syscall.SIGABRT,
-	syscall.SIGALRM,
-	syscall.SIGBUS,
-	syscall.SIGCHLD,
-	syscall.SIGCLD,
-	syscall.SIGCONT,
-	syscall.SIGFPE,
-	syscall.SIGHUP,
-	syscall.SIGILL,
+	// syscall.SIGABRT,
+	// syscall.SIGALRM,
+	// syscall.SIGBUS,
+	// syscall.SIGCHLD,
+	// syscall.SIGCLD,
+	// syscall.SIGCONT,
+	// syscall.SIGFPE,
+	// syscall.SIGHUP,
+	// syscall.SIGILL,
 	syscall.SIGINT,
-	syscall.SIGIO,
-	syscall.SIGIOT,
+	// syscall.SIGIO,
+	// syscall.SIGIOT,
 	syscall.SIGKILL,
-	syscall.SIGPIPE,
-	syscall.SIGPOLL,
-	syscall.SIGPROF,
-	syscall.SIGPWR,
-	syscall.SIGQUIT,
-	syscall.SIGSEGV,
-	syscall.SIGSTKFLT,
-	syscall.SIGSTOP,
-	syscall.SIGSYS,
+	// syscall.SIGPIPE,
+	// syscall.SIGPOLL,
+	// syscall.SIGPROF,
+	// syscall.SIGPWR,
+	// syscall.SIGQUIT,
+	// syscall.SIGSEGV,
+	// syscall.SIGSTKFLT,
+	// syscall.SIGSTOP,
+	// syscall.SIGSYS,
 	syscall.SIGTERM,
-	syscall.SIGTRAP,
-	syscall.SIGTSTP,
-	syscall.SIGTTIN,
-	syscall.SIGTTOU,
-	syscall.SIGUNUSED,
-	syscall.SIGURG,
-	syscall.SIGUSR1,
-	syscall.SIGUSR2,
-	syscall.SIGVTALRM,
-	syscall.SIGWINCH,
-	syscall.SIGXCPU,
-	syscall.SIGXFSZ,
+	// syscall.SIGTRAP,
+	// syscall.SIGTSTP,
+	// syscall.SIGTTIN,
+	// syscall.SIGTTOU,
+	// syscall.SIGUNUSED,
+	// syscall.SIGURG,
+	// syscall.SIGUSR1,
+	// syscall.SIGUSR2,
+	// syscall.SIGVTALRM,
+	// syscall.SIGWINCH,
+	// syscall.SIGXCPU,
+	// syscall.SIGXFSZ,
 }
 
 // RunWithStateMachine runs a command
@@ -59,19 +59,14 @@ func RunWithStateMachine(
 	exit int,
 	err error,
 ) {
-	signals := make(chan os.Signal, signalBuffer)
-	defer close(signals)
-
-	signal.Notify(signals, signalsToPass...)
-	defer signal.Stop(signals)
 
 	if withPty {
-		exit, err = runCommandPTY(cmd, config, signals)
+		exit, err = runCommandPTY(cmd, config)
 		if err != nil {
 			return
 		}
 	} else {
-		exit, err = runCommand(cmd, config, signals)
+		exit, err = runCommand(cmd, config)
 		if err != nil {
 			return
 		}
@@ -84,7 +79,6 @@ func RunWithStateMachine(
 func runCommand(
 	cmd *exec.Cmd,
 	config *statemachine.Config,
-	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
@@ -128,8 +122,6 @@ func runCommand(
 	stateChanges := statemachine.Run(config, outputLines)
 	inputLines := selectStateCommand(stateChanges)
 
-	go writeLines(stdin, inputLines)
-
 	go io.Copy(os.Stdout, stdoutPipeReader)
 	go io.Copy(os.Stderr, stderrPipeReader)
 	go io.Copy(stdin, os.Stdin)
@@ -141,7 +133,25 @@ func runCommand(
 		return
 	}
 
-	go passSignals(cmd.Process, signals)
+	signals := make(chan os.Signal, 20)
+	defer close(signals)
+
+	signal.Notify(signals, signalsToPass...)
+	defer signal.Stop(signals)
+
+	go func() {
+		passSignals(cmd.Process, signals)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	go func() {
+		err = passLines(stdin, inputLines)
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	// wait for exit
 
@@ -153,26 +163,33 @@ func runCommand(
 	return
 }
 
-// runCommand runs a command as a pseudo terminal!
+// runCommand runs a command in a pseudo terminal!
 func runCommandPTY(
 	cmd *exec.Cmd,
 	config *statemachine.Config,
-	signals <-chan os.Signal,
 ) (
 	exit int,
 	err error,
 ) {
-	pipeReader, pipeWriter := io.Pipe()
-	defer pipeReader.Close()
-	defer pipeWriter.Close()
-
-	// start process and get pty
-
-	ptyStream, err := pty.Start(cmd)
+	ptyStream, ttyStream, err := pty.Open()
 	if err != nil {
 		return
 	}
+	defer ttyStream.Close()
 	defer ptyStream.Close()
+
+	cmd.Stdout = ttyStream
+	cmd.Stdin = ttyStream
+	cmd.Stderr = ttyStream
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	cmd.SysProcAttr.Setctty = true
+	cmd.SysProcAttr.Setsid = true
+
+	pipeReader, pipeWriter := io.Pipe()
+	defer pipeReader.Close()
+	defer pipeWriter.Close()
 
 	ptyTee := io.TeeReader(ptyStream, pipeWriter)
 
@@ -182,39 +199,39 @@ func runCommandPTY(
 	stateChanges := statemachine.Run(config, outputLines)
 	inputLines := selectStateCommand(stateChanges)
 
-	go writeLines(ptyStream, inputLines)
-
 	go io.Copy(os.Stdout, pipeReader)
 	go io.Copy(ptyStream, os.Stdin)
 
-	go passSignals(cmd.Process, signals)
+	// start the command
 
-	// wait for exit
-
-	exit, err = waitCommand(cmd)
+	err = cmd.Start()
 	if err != nil {
 		return
 	}
 
-	return
-}
+	signals := make(chan os.Signal, 20)
+	defer close(signals)
 
-// waitCommand waits for a command to exit and returns the exit code
-func waitCommand(
-	cmd *exec.Cmd,
-) (
-	exit int,
-	err error,
-) {
-	err = cmd.Wait()
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			err = nil
-			exit = status.ExitStatus()
-			return
+	signal.Notify(signals, signalsToPass...)
+	defer signal.Stop(signals)
+
+	go func() {
+		passSignals(cmd.Process, signals)
+		if err != nil {
+			panic(err)
 		}
-	}
+	}()
 
+	go func() {
+		err = passLines(ptyStream, inputLines)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// wait for exit
+
+	exit, err = waitCommand(cmd)
 	if err != nil {
 		return
 	}

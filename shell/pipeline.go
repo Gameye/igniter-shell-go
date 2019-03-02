@@ -3,82 +3,39 @@ package shell
 import (
 	"bufio"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
 	"github.com/Gameye/igniter-shell-go/statemachine"
 )
 
-const outputBuffer = 200
-const inputBuffer = 20
-const signalBuffer = 20
-const stateChangeBuffer = 20
-
 // readLines reads lines from a reader in a channel
 func readLines(
 	reader io.Reader,
 ) <-chan string {
 	lines := make(chan string)
-	bufferedReader := bufio.NewReader(reader)
+	scanner := bufio.NewScanner(reader)
 
 	go func() {
 		defer close(lines)
 
-		var err error
 		var line string
-		for {
-			line, err = bufferedReader.ReadString('\n')
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				panic(err)
-			}
+		for scanner.Scan() {
+			line = scanner.Text()
 
 			line = strings.TrimSpace(line)
 			if line != "" {
 				lines <- line
 			}
 		}
-	}()
-
-	return lines
-}
-
-// writeLines writes lines from a channel in a writer
-func writeLines(
-	writer io.Writer,
-	lines <-chan string,
-) {
-	var err error
-	var line string
-	for line = range lines {
-		_, err = io.WriteString(writer, line+"\n")
-		if err == io.EOF {
-			return
-		}
+		err := scanner.Err()
+		// FIX: read /dev/ptmx: input/output error
 		if err != nil {
 			panic(err)
 		}
-	}
-	return
-}
+	}()
 
-// passSignals passes singnals from a channel to a process
-func passSignals(
-	process *os.Process,
-	signals <-chan os.Signal,
-) {
-	var err error
-	var signal os.Signal
-	for signal = range signals {
-		err = process.Signal(signal)
-		if err != nil {
-			return
-		}
-	}
-	return
+	return lines
 }
 
 func selectStateCommand(

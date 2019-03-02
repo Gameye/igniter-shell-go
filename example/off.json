@@ -1,0 +1,28 @@
+{
+    "script": {
+        "initialState": "on",
+        "states": {
+            "on": {
+                "events": [
+                    {
+                        "type": "timer",
+                        "interval": 200,
+                        "nextState": "off"
+                    }
+                ]
+            }
+        },
+        "transitions": [
+            {
+                "from": "off",
+                "to": "on",
+                "command": "echo on"
+            },
+            {
+                "from": "on",
+                "to": "off",
+                "command": "echo off"
+            }
+        ]
+    }
+}
