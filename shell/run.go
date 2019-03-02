@@ -11,45 +11,6 @@ import (
 	"github.com/kr/pty"
 )
 
-// TODO: figure out which signals we should actually pass
-var signalsToPass = []os.Signal{
-	syscall.SIGABRT,
-	syscall.SIGALRM,
-	syscall.SIGBUS,
-	syscall.SIGCHLD,
-	syscall.SIGCLD,
-	syscall.SIGCONT,
-	syscall.SIGFPE,
-	syscall.SIGHUP,
-	syscall.SIGILL,
-	syscall.SIGINT,
-	syscall.SIGIO,
-	syscall.SIGIOT,
-	syscall.SIGKILL,
-	syscall.SIGPIPE,
-	syscall.SIGPOLL,
-	syscall.SIGPROF,
-	syscall.SIGPWR,
-	syscall.SIGQUIT,
-	syscall.SIGSEGV,
-	syscall.SIGSTKFLT,
-	syscall.SIGSTOP,
-	syscall.SIGSYS,
-	syscall.SIGTERM,
-	syscall.SIGTRAP,
-	syscall.SIGTSTP,
-	syscall.SIGTTIN,
-	syscall.SIGTTOU,
-	syscall.SIGUNUSED,
-	syscall.SIGURG,
-	syscall.SIGUSR1,
-	syscall.SIGUSR2,
-	syscall.SIGVTALRM,
-	syscall.SIGWINCH,
-	syscall.SIGXCPU,
-	syscall.SIGXFSZ,
-}
-
 // RunWithStateMachine runs a command
 func RunWithStateMachine(
 	cmd *exec.Cmd,
@@ -164,7 +125,7 @@ func runCommand(
 	signals := make(chan os.Signal, 20)
 	defer close(signals)
 
-	signal.Notify(signals, signalsToPass...)
+	signal.Notify(signals)
 	defer signal.Stop(signals)
 
 	go passSignals(cmd.Process, signals)
@@ -250,7 +211,7 @@ func runCommandPTY(
 	signals := make(chan os.Signal, 20)
 	defer close(signals)
 
-	signal.Notify(signals, signalsToPass...)
+	signal.Notify(signals)
 	defer signal.Stop(signals)
 
 	go passSignals(cmd.Process, signals)
