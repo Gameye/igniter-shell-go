@@ -46,6 +46,13 @@ func runCommand(
 ) {
 	// setup pipes
 
+	stdoutPipeReader, stdoutPipeWriter := io.Pipe()
+	stderrPipeReader, stderrPipeWriter := io.Pipe()
+	defer stdoutPipeReader.Close()
+	defer stdoutPipeWriter.Close()
+	defer stderrPipeReader.Close()
+	defer stderrPipeWriter.Close()
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return
@@ -63,13 +70,6 @@ func runCommand(
 		return
 	}
 	defer stdin.Close()
-
-	stdoutPipeReader, stdoutPipeWriter := io.Pipe()
-	stderrPipeReader, stderrPipeWriter := io.Pipe()
-	defer stdoutPipeReader.Close()
-	defer stdoutPipeWriter.Close()
-	defer stderrPipeReader.Close()
-	defer stderrPipeWriter.Close()
 
 	stdoutTee := io.TeeReader(stdout, stdoutPipeWriter)
 	stderrTee := io.TeeReader(stderr, stderrPipeWriter)
@@ -148,6 +148,10 @@ func runCommandPTY(
 	exit int,
 	err error,
 ) {
+	pipeReader, pipeWriter := io.Pipe()
+	defer pipeReader.Close()
+	defer pipeWriter.Close()
+
 	ptyStream, ttyStream, err := pty.Open()
 	if err != nil {
 		return
@@ -163,10 +167,6 @@ func runCommandPTY(
 	}
 	cmd.SysProcAttr.Setctty = true
 	cmd.SysProcAttr.Setsid = true
-
-	pipeReader, pipeWriter := io.Pipe()
-	defer pipeReader.Close()
-	defer pipeWriter.Close()
 
 	ptyTee := io.TeeReader(ptyStream, pipeWriter)
 

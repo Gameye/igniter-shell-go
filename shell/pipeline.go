@@ -28,10 +28,14 @@ func readLines(
 				lines <- line
 			}
 		}
-		err := scanner.Err()
-		if err != nil {
-			panic(err)
-		}
+		/*
+			ignore possible read /dev/ptmx: input/output error here
+
+			err := scanner.Err()
+			if err != nil {
+				panic(err)
+			}
+		*/
 	}()
 
 	return lines
