@@ -30,6 +30,8 @@ func readLines(
 		}
 		/*
 			ignore possible read /dev/ptmx: input/output error here
+			also ignore possible bufio.Scanner: token too long (this
+			is a problem)
 
 			err := scanner.Err()
 			if err != nil {

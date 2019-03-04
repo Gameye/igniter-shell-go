@@ -156,8 +156,8 @@ func runCommandPTY(
 	if err != nil {
 		return
 	}
-	defer ttyStream.Close()
 	defer ptyStream.Close()
+	defer ttyStream.Close()
 
 	cmd.Stdout = ttyStream
 	cmd.Stdin = ttyStream
