@@ -127,6 +127,13 @@ func renderConfigTemplate(
 		)
 	}
 
+	for key := range config.Env {
+		config.Env[key] = utils.RenderTemplate(
+			config.Env[key],
+			variables,
+		)
+	}
+
 	for index := range config.Files {
 		config.Files[index].Content = utils.RenderTemplate(
 			config.Files[index].Content,
