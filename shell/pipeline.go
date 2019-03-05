@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Gameye/igniter-shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/utils"
 )
 
 // readLines reads lines from a reader in a channel
@@ -22,6 +23,8 @@ func readLines(
 		var line string
 		for scanner.Scan() {
 			line = scanner.Text()
+
+			line = utils.StripSpecial(line)
 
 			line = strings.TrimSpace(line)
 			if line != "" {
