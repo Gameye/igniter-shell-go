@@ -84,6 +84,22 @@ jobs:
       DISTRIBUTION: ubuntu/bionic
     steps: *deploy_deb_steps
 
+  deploy-buster-staging:
+    executor: ruby
+    environment:
+      REPOSITORY: gameye/staging
+      PACKAGE: debian-buster
+      DISTRIBUTION: debian/buster
+    steps: *deploy_deb_steps
+
+  deploy-buster-production:
+    executor: ruby
+    environment:
+      REPOSITORY: gameye/production
+      PACKAGE: debian-buster
+      DISTRIBUTION: debian/buster
+    steps: *deploy_deb_steps
+
 workflows:
   version: 2
   go:
@@ -96,7 +112,7 @@ workflows:
       - vet-go: *go_job
 
       - build-go:
-          requires: [ lint-go, test-go, vet-go ]
+          requires: [lint-go, test-go, vet-go]
           filters: &filters_tags
             branches:
               ignore: /.*?/
@@ -109,26 +125,35 @@ workflows:
 
       - deploy-xenial-staging:
           context: packagecloud-authorized
-          requires: [ build-go ]
+          requires: [build-go]
           filters: *filters_tags
 
       - deploy-xenial-production:
           context: packagecloud-authorized
-          requires: [ build-go ]
+          requires: [build-go]
           filters: &filters_tags_production
             branches:
               ignore: /.*?/
             tags:
-              only:
-                # v1.0.0
-                - /^v\d+\.\d+\.\d+$/
+              # v1.0.0
+              only: /^v\d+\.\d+\.\d+$/
 
       - deploy-bionic-staging:
           context: packagecloud-authorized
-          requires: [ build-go ]
+          requires: [build-go]
           filters: *filters_tags
 
       - deploy-bionic-production:
           context: packagecloud-authorized
-          requires: [ build-go ]
+          requires: [build-go]
+          filters: *filters_tags_production
+
+      - deploy-buster-staging:
+          context: packagecloud-authorized
+          requires: [build-go]
+          filters: *filters_tags
+
+      - deploy-buster-production:
+          context: packagecloud-authorized
+          requires: [build-go]
           filters: *filters_tags_production
