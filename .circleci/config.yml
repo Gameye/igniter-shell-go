@@ -22,7 +22,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - bin
+            - out
 
   deploy:
     docker:
