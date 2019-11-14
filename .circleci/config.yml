@@ -34,13 +34,28 @@ jobs:
     executor: go
     steps:
       - checkout
-      - attach_workspace: &attach_workspace
+      - attach_workspace:
           at: .
       - run: make build
       - persist_to_workspace:
           root: .
           paths:
             - bin
+
+  deploy:
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          BUCKET: public.gameye.com
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo pip install awscli
+      - run: >
+          aws s3 cp
+          out/
+          s3://$BUCKET/binaries/
+          --recursive
 
 workflows:
   version: 2
@@ -60,3 +75,8 @@ workflows:
               ignore: /.*?/
             tags:
               only: /^v/
+
+      - deploy:
+          context: aws-authorized
+          requires: [build-go]
+          filters: *filters_tags
