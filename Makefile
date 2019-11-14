@@ -1,31 +1,29 @@
 SHELL:=$(PREFIX)/bin/bash
 
-VERSION=$(shell git describe --always)
+VERSION?=$(shell git describe --always)
 MODULE=github.com/Gameye/igniter-shell-go
 
 GO_SRC=*.go */*.go
 BIN=\
-	igniter-shell-linux-amd64 \
-	igniter-shell-darwin-amd64 \
+	amd64/linux/igniter-shell \
+	amd64/darwin/igniter-shell \
 
 BIN_TARGET=$(addprefix bin/,${BIN})
+PACKAGE_TARGET=$(patsubst %,out/%-${VERSION}.tar.gz,${BIN})
 
-PACKAGE=$(addsuffix .deb,$(notdir $(wildcard package/deb/*)))
-PACKAGE_TARGET=$(addprefix out/,${PACKAGE})
-
-all: rebuild
+all: build
 
 rebuild: clean build
 
 clean:
-	rm -rf bin out .package_tmp
+	rm -rf bin out
 
 build: ${BIN_TARGET} ${PACKAGE_TARGET}
 
-bin/igniter-shell-linux-%: export GOOS=linux
-bin/igniter-shell-darwin-%: export GOOS=darwin
-bin/igniter-shell-%-amd64: export GOARCH=amd64
-bin/igniter-shell-%: $(GO_SRC)
+bin/%/linux/igniter-shell: export GOOS=linux
+bin/%/darwin/igniter-shell: export GOOS=darwin
+bin/amd64/%/igniter-shell: export GOARCH=amd64
+bin/%: $(GO_SRC)
 	go build \
 		-o $@ \
 		-ldflags=" \
@@ -33,19 +31,8 @@ bin/igniter-shell-%: $(GO_SRC)
 			-extldflags '-static' \
 		"
 
-.package_tmp/deb/%: bin/igniter-shell-linux-amd64 package/deb/%
-	@mkdir -p $@
-	cp -r package/deb/$*/* $@
-
-	@mkdir -p $@/usr/local/bin
-	cp $< $@/usr/local/bin/igniter-shell
-
-	sed -i 's/Version:.*/Version: '$(VERSION:v%=%)'/' $@/DEBIAN/control
-
-out/%.deb:	.package_tmp/deb/%
-	@mkdir -p $(@D)
-	dpkg-deb --build $< $@
+out/%-${VERSION}.tar.gz: bin/%
+	@mkdir --parents $(@D)
+	tar --create --gzip --file $@ --directory $(<D) $(<F)
 
 .PHONY: all clean build rebuild
-
-.PRECIOUS: .package_tmp/deb/% bin/igniter-shell-%

@@ -1,7 +1,0 @@
-Package: igniter-shell
-Maintainer: Elmer Bulthuis <elmer@gameye.com>
-Version: 0.0.0
-Description: Gameye Igniter Shell
-Architecture: amd64
-Origin: Gameye
-Distribution: buster

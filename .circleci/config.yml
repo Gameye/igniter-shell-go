@@ -5,10 +5,6 @@ executors:
     docker:
       - image: circleci/golang:1.11
 
-  ruby:
-    docker:
-      - image: circleci/ruby:2.5
-
 jobs:
   lint-go:
     docker: &docker_go
@@ -38,67 +34,28 @@ jobs:
     executor: go
     steps:
       - checkout
-      - attach_workspace: &attach_workspace
+      - attach_workspace:
           at: .
-      - run: make build
+      - run: VERSION=$CIRCLE_TAG make build
       - persist_to_workspace:
           root: .
           paths:
             - bin
-            - out
 
-  deploy-xenial-staging:
-    executor: ruby
-    environment:
-      REPOSITORY: gameye/staging
-      PACKAGE: ubuntu-xenial
-      DISTRIBUTION: ubuntu/xenial
-    steps: &deploy_deb_steps
-      - run: gem install package_cloud
-      - attach_workspace: *attach_workspace
-      - run: cp out/$PACKAGE.deb ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
+  deploy:
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          BUCKET: public.gameye.com
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo pip install awscli
       - run: >
-          package_cloud push $REPOSITORY/$DISTRIBUTION ./$CIRCLE_PROJECT_REPONAME-$CIRCLE_TAG.deb
-
-  deploy-xenial-production:
-    executor: ruby
-    environment:
-      REPOSITORY: gameye/production
-      PACKAGE: ubuntu-xenial
-      DISTRIBUTION: ubuntu/xenial
-    steps: *deploy_deb_steps
-
-  deploy-bionic-staging:
-    executor: ruby
-    environment:
-      REPOSITORY: gameye/staging
-      PACKAGE: ubuntu-bionic
-      DISTRIBUTION: ubuntu/bionic
-    steps: *deploy_deb_steps
-
-  deploy-bionic-production:
-    executor: ruby
-    environment:
-      REPOSITORY: gameye/production
-      PACKAGE: ubuntu-bionic
-      DISTRIBUTION: ubuntu/bionic
-    steps: *deploy_deb_steps
-
-  deploy-buster-staging:
-    executor: ruby
-    environment:
-      REPOSITORY: gameye/staging
-      PACKAGE: debian-buster
-      DISTRIBUTION: debian/buster
-    steps: *deploy_deb_steps
-
-  deploy-buster-production:
-    executor: ruby
-    environment:
-      REPOSITORY: gameye/production
-      PACKAGE: debian-buster
-      DISTRIBUTION: debian/buster
-    steps: *deploy_deb_steps
+          aws s3 cp
+          out/
+          s3://$BUCKET/binaries/
+          --recursive
 
 workflows:
   version: 2
@@ -117,43 +74,9 @@ workflows:
             branches:
               ignore: /.*?/
             tags:
-              only:
-                # v1.0.0
-                - /^v\d+\.\d+\.\d+$/
-                # v1.0.0-1 / v1.0.0
-                - /^v\d+\.\d+\.\d+(\-\d+)?$/
+              only: /^v/
 
-      - deploy-xenial-staging:
-          context: packagecloud-authorized
+      - deploy:
+          context: aws-authorized
           requires: [build-go]
           filters: *filters_tags
-
-      - deploy-xenial-production:
-          context: packagecloud-authorized
-          requires: [build-go]
-          filters: &filters_tags_production
-            branches:
-              ignore: /.*?/
-            tags:
-              # v1.0.0
-              only: /^v\d+\.\d+\.\d+$/
-
-      - deploy-bionic-staging:
-          context: packagecloud-authorized
-          requires: [build-go]
-          filters: *filters_tags
-
-      - deploy-bionic-production:
-          context: packagecloud-authorized
-          requires: [build-go]
-          filters: *filters_tags_production
-
-      - deploy-buster-staging:
-          context: packagecloud-authorized
-          requires: [build-go]
-          filters: *filters_tags
-
-      - deploy-buster-production:
-          context: packagecloud-authorized
-          requires: [build-go]
-          filters: *filters_tags_production
