@@ -9,6 +9,7 @@ jobs:
   test:
     executor: go
     steps:
+      - run: go get golang.org/x/lint/golint
       - checkout
       - run: ./test.sh
 
