@@ -1,6 +1,6 @@
 SHELL:=$(PREFIX)/bin/bash
 
-VERSION=$(shell git describe --always)
+VERSION?=$(shell git describe --always)
 MODULE=github.com/Gameye/igniter-shell-go
 
 GO_SRC=*.go */*.go

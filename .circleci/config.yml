@@ -36,7 +36,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: make build
+      - run: VERSION=$CIRCLE_TAG make build
       - persist_to_workspace:
           root: .
           paths:
