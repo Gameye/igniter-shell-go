@@ -64,7 +64,7 @@ workflows:
       - lint-go: &go_job
           filters: &filters_all
             tags:
-              only: /.*?/
+              only: /.*/
       - test-go: *go_job
       - vet-go: *go_job
 
@@ -72,9 +72,9 @@ workflows:
           requires: [lint-go, test-go, vet-go]
           filters: &filters_tags
             branches:
-              ignore: /.*?/
+              ignore: /.*/
             tags:
-              only: /^v/
+              only: /^v.*$/
 
       - deploy:
           context: aws-authorized
