@@ -10,7 +10,7 @@ BIN=\
 
 BIN_TARGET=$(addprefix bin/,${BIN})
 
-all: rebuild
+all: build
 
 rebuild: clean build
 
