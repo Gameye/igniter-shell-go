@@ -3,34 +3,16 @@ version: 2.1
 executors:
   go:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.13
 
 jobs:
-  lint-go:
-    docker: &docker_go
-      - image: circleci/golang:1.11
+  test:
+    executor: go
     steps:
       - checkout
-      - run: go get golang.org/x/lint/golint
-      - run: golint -set_exit_status ./...
+      - run: ./test.sh
 
-  test-go:
-    docker: *docker_go
-    steps:
-      - checkout
-      - run: go get github.com/jstemmer/go-junit-report
-      - run: mkdir -p /tmp/test-results
-      - run: go test -v ./... | go-junit-report > /tmp/test-results/spec.xml
-      - store_test_results:
-          path: /tmp/test-results
-
-  vet-go:
-    docker: *docker_go
-    steps:
-      - checkout
-      - run: go vet ./...
-
-  build-go:
+  build:
     executor: go
     steps:
       - checkout
@@ -61,22 +43,22 @@ workflows:
   version: 2
   go:
     jobs:
-      - lint-go: &go_job
-          filters: &filters_all
+      - test:
+          filters:
             tags:
               only: /.*/
-      - test-go: *go_job
-      - vet-go: *go_job
 
-      - build-go:
+      - build:
           requires: [lint-go, test-go, vet-go]
-          filters: &filters_tags
+          filters:
+            tags:
+              only: /.*/
+
+      - deploy:
+          context: aws-authorized
+          requires: [build]
+          filters:
             branches:
               ignore: /.*/
             tags:
               only: /^v.*$/
-
-      - deploy:
-          context: aws-authorized
-          requires: [build-go]
-          filters: *filters_tags
