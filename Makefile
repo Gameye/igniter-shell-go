@@ -10,15 +10,12 @@ BIN=\
 
 BIN_TARGET=$(addprefix bin/,${BIN})
 
-PACKAGE=$(addsuffix .deb,$(notdir $(wildcard package/deb/*)))
-PACKAGE_TARGET=$(addprefix out/,${PACKAGE})
-
 all: rebuild
 
 rebuild: clean build
 
 clean:
-	rm -rf bin out .package_tmp
+	rm -rf bin
 
 build: ${BIN_TARGET} ${PACKAGE_TARGET}
 
@@ -33,19 +30,4 @@ bin/igniter-shell-%: $(GO_SRC)
 			-extldflags '-static' \
 		"
 
-.package_tmp/deb/%: bin/igniter-shell-linux-amd64 package/deb/%
-	@mkdir -p $@
-	cp -r package/deb/$*/* $@
-
-	@mkdir -p $@/usr/local/bin
-	cp $< $@/usr/local/bin/igniter-shell
-
-	sed -i 's/Version:.*/Version: '$(VERSION:v%=%)'/' $@/DEBIAN/control
-
-out/%.deb:	.package_tmp/deb/%
-	@mkdir -p $(@D)
-	dpkg-deb --build $< $@
-
 .PHONY: all clean build rebuild
-
-.PRECIOUS: .package_tmp/deb/% bin/igniter-shell-%
