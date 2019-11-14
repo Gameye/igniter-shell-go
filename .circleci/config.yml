@@ -49,14 +49,13 @@ workflows:
               only: /.*/
 
       - build:
-          requires: [lint-go, test-go, vet-go]
           filters:
             tags:
               only: /.*/
 
       - deploy:
           context: aws-authorized
-          requires: [build]
+          requires: [test, build]
           filters:
             branches:
               ignore: /.*/
