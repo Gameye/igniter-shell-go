@@ -29,6 +29,7 @@ jobs:
     docker:
       - image: circleci/python:3.6
         environment:
+          BINARY: igniter-shell
           BUCKET: public.gameye.com
     steps:
       - attach_workspace:
@@ -37,7 +38,7 @@ jobs:
       - run: >
           aws s3 cp
           out/
-          s3://$BUCKET/binaries/
+          s3://$BUCKET/binaries/$BINARY/$CIRCLE_TAG/
           --recursive
 
 workflows:

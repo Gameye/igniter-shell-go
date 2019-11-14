@@ -9,7 +9,7 @@ BIN=\
 	amd64/darwin/igniter-shell \
 
 BIN_TARGET=$(addprefix bin/,${BIN})
-PACKAGE_TARGET=$(patsubst %,out/%-${VERSION}.tar.gz,${BIN})
+PACKAGE_TARGET=$(patsubst %,out/%.tar.gz,${BIN})
 
 all: build
 
@@ -31,7 +31,7 @@ bin/%: $(GO_SRC)
 			-extldflags '-static' \
 		"
 
-out/%-${VERSION}.tar.gz: bin/%
+out/%.tar.gz: bin/%
 	@mkdir --parents $(@D)
 	tar --create --gzip --file $@ --directory $(<D) $(<F)
 
