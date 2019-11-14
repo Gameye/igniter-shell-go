@@ -23,7 +23,7 @@ build: ${BIN_TARGET} ${PACKAGE_TARGET}
 bin/%/linux/igniter-shell: export GOOS=linux
 bin/%/darwin/igniter-shell: export GOOS=darwin
 bin/amd64/%/igniter-shell: export GOARCH=amd64
-bin/%/igniter-shell: $(GO_SRC)
+bin/%: $(GO_SRC)
 	go build \
 		-o $@ \
 		-ldflags=" \
