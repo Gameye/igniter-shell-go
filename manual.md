@@ -284,8 +284,9 @@ script:
 defaults:
   port.game: ''
   port.query: ''
-
-Arg file
+  ```
+  
+### Arg file
 port:
   - name: game
     protocol: udp
@@ -295,4 +296,3 @@ arg:
   - name: platform
     type: string
     defaultValue: 'steam'
-    ```
