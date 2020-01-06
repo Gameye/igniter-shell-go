@@ -295,4 +295,4 @@ arg:
   - name: platform
     type: string
     defaultValue: 'steam'
-    ```
+ 
