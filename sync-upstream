@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -e # Exit immediately if a command exits with a non-zero status.
+
+git pull git@github.com:Gameye/igniter-shell-go.git master:master
+git push origin master
