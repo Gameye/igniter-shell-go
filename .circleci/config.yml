@@ -11,7 +11,7 @@ jobs:
     steps:
       - run: go get golang.org/x/lint/golint
       - checkout
-      - run: ./test.sh
+      - run: ./test
 
   build:
     executor: go
