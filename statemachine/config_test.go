@@ -40,7 +40,7 @@ func makeLightTestConfig() (
 		InitialState: "Off",
 		States: map[string]StateConfig{
 			"On": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					LiteralEventConfig{
 						Value:     "SwitchOff",
 						NextState: "Off",
@@ -52,7 +52,7 @@ func makeLightTestConfig() (
 				},
 			},
 			"Off": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					RegexEventConfig{
 						Regexp:    regexp.MustCompile("^SwitchOn$"),
 						NextState: "On",
@@ -84,7 +84,7 @@ func makeAutoTestConfig() (
 		InitialState: "Off",
 		States: map[string]StateConfig{
 			"On": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					TimerEventConfig{
 						NextState: "Off",
 						Interval:  time.Duration(time.Second * 2),
@@ -92,7 +92,7 @@ func makeAutoTestConfig() (
 				},
 			},
 			"Off": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					TimerEventConfig{
 						NextState: "On",
 						Interval:  time.Duration(time.Second * 2),

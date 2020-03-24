@@ -38,18 +38,18 @@ type StateConfigMap map[string]StateConfig
 StateConfig is a transition from one state to another.
 */
 type StateConfig struct {
-	Events EventStateConfigList `json:"events"`
+	Events EventConfigList `json:"events"`
 }
 
 /*
-EventStateConfigList list of EventStateConfig
+EventConfigList list of EventConfig
 */
-type EventStateConfigList []EventStateConfig
+type EventConfigList []EventConfig
 
 /*
 UnmarshalJSON provides custom unmarshalling
 */
-func (config *EventStateConfigList) UnmarshalJSON(
+func (config *EventConfigList) UnmarshalJSON(
 	data []byte,
 ) (
 	err error,
@@ -68,9 +68,9 @@ func (config *EventStateConfigList) UnmarshalJSON(
 }
 
 /*
-EventStateConfig is the configuration for an event
+EventConfig is the configuration for an event
 */
-type EventStateConfig interface{}
+type EventConfig interface{}
 
 /*
 LiteralEventConfig configures literal events
@@ -166,7 +166,7 @@ func (target *TimerEventConfig) UnmarshalJSON(
 eventStateConfigJSON helper
 */
 type eventStateConfigJSON struct {
-	Payload EventStateConfig
+	Payload EventConfig
 }
 
 /*
