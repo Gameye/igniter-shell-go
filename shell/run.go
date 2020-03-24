@@ -7,14 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Gameye/igniter-shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/runner"
 	"github.com/kr/pty"
 )
 
-// RunWithStateMachine runs a command
-func RunWithStateMachine(
+// RunWithRunner runs a command
+func RunWithRunner(
 	cmd *exec.Cmd,
-	config *statemachine.Config,
+	config *runner.Config,
 	withPty bool,
 ) (
 	exit int,
@@ -39,7 +39,7 @@ func RunWithStateMachine(
 // runCommand runs a command
 func runCommand(
 	cmd *exec.Cmd,
-	config *statemachine.Config,
+	config *runner.Config,
 ) (
 	exit int,
 	err error,
@@ -80,7 +80,7 @@ func runCommand(
 	stderrLines := readLines(stderrTee)
 	outputLines := mergeLines(stdoutLines, stderrLines)
 
-	stateChanges := statemachine.Run(config, outputLines)
+	stateChanges := runner.Run(config, outputLines)
 	inputLines := selectStateCommand(stateChanges)
 
 	// start routines
@@ -143,7 +143,7 @@ func runCommand(
 // runCommand runs a command in a pseudo terminal!
 func runCommandPTY(
 	cmd *exec.Cmd,
-	config *statemachine.Config,
+	config *runner.Config,
 ) (
 	exit int,
 	err error,
@@ -173,7 +173,7 @@ func runCommandPTY(
 	// setup pipeline
 
 	outputLines := readLines(ptyTee)
-	stateChanges := statemachine.Run(config, outputLines)
+	stateChanges := runner.Run(config, outputLines)
 	inputLines := selectStateCommand(stateChanges)
 
 	// start routines

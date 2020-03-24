@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLightStateMachine(test *testing.T) {
+func TestLightRunner(test *testing.T) {
 	config := makeLightTestConfig()
 
 	actionChannel := make(chan string, 1)
@@ -44,7 +44,7 @@ func TestLightStateMachine(test *testing.T) {
 
 }
 
-func TestAutoStateMachine(test *testing.T) {
+func TestAutoRunner(test *testing.T) {
 	config := makeAutoTestConfig()
 
 	actionChannel := make(chan string)

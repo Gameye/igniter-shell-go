@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ type StateChange struct {
 }
 
 /*
-Run runs a new StateMachine
+Run runs a new Runner
 */
 func Run(
 	config *Config,

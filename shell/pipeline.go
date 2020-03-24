@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Gameye/igniter-shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/runner"
 	"github.com/Gameye/igniter-shell-go/utils"
 )
 
@@ -47,7 +47,7 @@ func readLines(
 }
 
 func selectStateCommand(
-	stateChanges <-chan statemachine.StateChange,
+	stateChanges <-chan runner.StateChange,
 ) <-chan string {
 	stateCommands := make(chan string)
 

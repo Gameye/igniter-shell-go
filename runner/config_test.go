@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecodeStateMachineConfig(test *testing.T) {
+func TestDecodeRunnerConfig(test *testing.T) {
 	var err error
 	defer func() {
 		assert.NoError(test, err)

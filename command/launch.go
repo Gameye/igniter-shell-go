@@ -10,7 +10,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/Gameye/igniter-shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/runner"
 	"github.com/Gameye/igniter-shell-go/utils"
 
 	"github.com/Gameye/igniter-shell-go/shell"
@@ -103,7 +103,7 @@ func runLaunchCommand(
 	)
 	proc.Env = os.Environ()
 
-	exit, err := shell.RunWithStateMachine(
+	exit, err := shell.RunWithRunner(
 		proc,
 		config.Script,
 		emulateTTY,
@@ -144,7 +144,7 @@ func renderConfigTemplate(
 
 	for _, transitionConfigUnknown := range config.Script.Transitions {
 		switch transitionConfig := transitionConfigUnknown.(type) {
-		case statemachine.CommandTransitionConfig:
+		case runner.CommandTransitionConfig:
 			transitionConfig.Command = utils.RenderTemplate(
 				transitionConfig.Command,
 				variables,
