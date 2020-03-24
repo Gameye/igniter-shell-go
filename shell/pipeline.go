@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Gameye/igniter-shell-go/runner"
 	"github.com/Gameye/igniter-shell-go/utils"
 )
 
@@ -44,22 +43,6 @@ func readLines(
 	}()
 
 	return lines
-}
-
-func selectStateCommand(
-	stateChanges <-chan runner.StateChange,
-) <-chan string {
-	stateCommands := make(chan string)
-
-	go func() {
-		defer close(stateCommands)
-
-		for stateChange := range stateChanges {
-			stateCommands <- stateChange.Command
-		}
-	}()
-
-	return stateCommands
 }
 
 func mergeLines(cs ...<-chan string) <-chan string {

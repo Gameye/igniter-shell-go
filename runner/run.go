@@ -8,9 +8,21 @@ import (
 /*
 StateChange contains information on a changes state
 */
-type StateChange struct {
+type StateChange interface{}
+
+/*
+CommandStateChange sends commands to the process
+*/
+type CommandStateChange struct {
 	NextState string
 	Command   string
+}
+
+/*
+ExitStateChange should exit the process
+*/
+type ExitStateChange struct {
+	NextState string
 }
 
 /*
@@ -118,15 +130,12 @@ func pushState(
 	config *Config,
 	changeChannel chan<- StateChange,
 ) {
-	command := transition(
+	stateChange := transition(
 		nextState,
 		prevState,
 		config,
 	)
-	changeChannel <- StateChange{
-		nextState,
-		command,
-	}
+	changeChannel <- stateChange
 }
 
 func transition(
@@ -134,21 +143,26 @@ func transition(
 	prevState string,
 	config *Config,
 ) (
-	command string,
+	stateChange StateChange,
 ) {
 	for _, transitionConfigUnknown := range config.Transitions {
 		switch transitionConfig := transitionConfigUnknown.(type) {
 		case CommandTransitionConfig:
 			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
 				(transitionConfig.To == nextState || transitionConfig.To == "") {
-				command = transitionConfig.Command
+				stateChange = CommandStateChange{
+					NextState: nextState,
+					Command:   transitionConfig.Command,
+				}
 				break
 			}
 
 		case ExitTransitionConfig:
 			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
 				(transitionConfig.To == nextState || transitionConfig.To == "") {
-				// TODO: handle this
+				stateChange = ExitStateChange{
+					NextState: nextState,
+				}
 				break
 			}
 		}

@@ -81,9 +81,25 @@ func runCommand(
 	outputLines := mergeLines(stdoutLines, stderrLines)
 
 	stateChanges := runner.Run(config, outputLines)
-	inputLines := selectStateCommand(stateChanges)
+
+	inputLines := make(chan string)
+	defer close(inputLines)
+	signals := make(chan os.Signal, 20)
+	defer close(signals)
 
 	// start routines
+
+	go func() {
+		for stateChangeUnknown := range stateChanges {
+			switch stateChange := stateChangeUnknown.(type) {
+			case runner.CommandStateChange:
+				inputLines <- stateChange.Command
+
+			case runner.ExitStateChange:
+				signals <- os.Interrupt
+			}
+		}
+	}()
 
 	go func() {
 		var err error
@@ -121,9 +137,6 @@ func runCommand(
 	if err != nil {
 		return
 	}
-
-	signals := make(chan os.Signal, 20)
-	defer close(signals)
 
 	signal.Notify(signals)
 	defer signal.Stop(signals)
@@ -174,9 +187,25 @@ func runCommandPTY(
 
 	outputLines := readLines(ptyTee)
 	stateChanges := runner.Run(config, outputLines)
-	inputLines := selectStateCommand(stateChanges)
+
+	inputLines := make(chan string)
+	defer close(inputLines)
+	signals := make(chan os.Signal, 20)
+	defer close(signals)
 
 	// start routines
+
+	go func() {
+		for stateChangeUnknown := range stateChanges {
+			switch stateChange := stateChangeUnknown.(type) {
+			case runner.CommandStateChange:
+				inputLines <- stateChange.Command
+
+			case runner.ExitStateChange:
+				signals <- os.Interrupt
+			}
+		}
+	}()
 
 	go func() {
 		var err error
@@ -207,9 +236,6 @@ func runCommandPTY(
 	if err != nil {
 		return
 	}
-
-	signals := make(chan os.Signal, 20)
-	defer close(signals)
 
 	signal.Notify(signals)
 	defer signal.Stop(signals)
