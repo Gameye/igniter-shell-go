@@ -145,7 +145,7 @@ func transition(
 				break
 			}
 
-		case KillTransitionConfig:
+		case ExitTransitionConfig:
 			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
 				(transitionConfig.To == nextState || transitionConfig.To == "") {
 				// TODO: handle this

@@ -56,9 +56,9 @@ type CommandTransitionConfig struct {
 }
 
 /*
-KillTransitionConfig transitions with a command
+ExitTransitionConfig transitions with a command
 */
-type KillTransitionConfig struct {
+type ExitTransitionConfig struct {
 	From string `json:"from"`
 	To   string `json:"to"`
 }
@@ -97,8 +97,8 @@ func (config *transitionConfigJSON) UnmarshalJSON(
 		}
 		config.Payload = payload
 
-	case "kill":
-		var payload KillTransitionConfig
+	case "exit":
+		var payload ExitTransitionConfig
 		err = json.Unmarshal(data, &payload)
 		if err != nil {
 			return
