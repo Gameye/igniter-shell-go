@@ -20,7 +20,7 @@
                 "docker",
                 "run",
                 "-ti",
-                "docker.gameye.com/csgo"
+                "gameye/csgo"
             ]
         },
         {
@@ -41,7 +41,7 @@
                 "docker",
                 "run",
                 "-ti",
-                "docker.gameye.com/tf2"
+                "gameye/tf2"
             ]
         },
         {
@@ -60,7 +60,7 @@
                 "docker",
                 "run",
                 "-ti",
-                "docker.gameye.com/tf2"
+                "gameye/tf2"
             ]
         },
         {

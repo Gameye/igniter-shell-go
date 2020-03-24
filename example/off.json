@@ -6,8 +6,17 @@
                 "events": [
                     {
                         "type": "timer",
-                        "interval": 200,
+                        "interval": 1000,
                         "nextState": "off"
+                    }
+                ]
+            },
+            "off": {
+                "events": [
+                    {
+                        "type": "timer",
+                        "interval": 2000,
+                        "nextState": "exit"
                     }
                 ]
             }
@@ -24,6 +33,10 @@
                 "from": "on",
                 "to": "off",
                 "command": "echo off"
+            },
+            {
+                "type": "exit",
+                "to": "exit"
             }
         ]
     }
