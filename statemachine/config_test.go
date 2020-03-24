@@ -61,12 +61,12 @@ func makeLightTestConfig() (
 			},
 		},
 		Transitions: []TransitionConfig{
-			TransitionConfig{
+			CommandTransitionConfig{
 				From:    "Off",
 				To:      "On",
 				Command: "DoSwitchOn",
 			},
-			TransitionConfig{
+			CommandTransitionConfig{
 				From:    "On",
 				To:      "Off",
 				Command: "DoSwitchOff",
@@ -101,11 +101,11 @@ func makeAutoTestConfig() (
 			},
 		},
 		Transitions: []TransitionConfig{
-			TransitionConfig{
+			CommandTransitionConfig{
 				To:      "On",
 				Command: "echo on",
 			},
-			TransitionConfig{
+			CommandTransitionConfig{
 				To:      "Off",
 				Command: "echo off",
 			},

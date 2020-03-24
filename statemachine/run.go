@@ -136,12 +136,23 @@ func transition(
 ) (
 	command string,
 ) {
-	for _, transition := range config.Transitions {
-		if (transition.From == prevState || transition.From == "") &&
-			(transition.To == nextState || transition.To == "") {
-			command = transition.Command
-			break
+	for _, transitionConfigUnknown := range config.Transitions {
+		switch transitionConfig := transitionConfigUnknown.(type) {
+		case CommandTransitionConfig:
+			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
+				(transitionConfig.To == nextState || transitionConfig.To == "") {
+				command = transitionConfig.Command
+				break
+			}
+
+		case KillTransitionConfig:
+			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
+				(transitionConfig.To == nextState || transitionConfig.To == "") {
+				// TODO: handle this
+				break
+			}
 		}
+
 	}
 
 	return

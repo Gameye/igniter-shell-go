@@ -10,6 +10,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
+	"github.com/Gameye/igniter-shell-go/statemachine"
 	"github.com/Gameye/igniter-shell-go/utils"
 
 	"github.com/Gameye/igniter-shell-go/shell"
@@ -141,11 +142,14 @@ func renderConfigTemplate(
 		)
 	}
 
-	for index := range config.Script.Transitions {
-		config.Script.Transitions[index].Command = utils.RenderTemplate(
-			config.Script.Transitions[index].Command,
-			variables,
-		)
+	for _, transitionConfigUnknown := range config.Script.Transitions {
+		switch transitionConfig := transitionConfigUnknown.(type) {
+		case statemachine.CommandTransitionConfig:
+			transitionConfig.Command = utils.RenderTemplate(
+				transitionConfig.Command,
+				variables,
+			)
+		}
 	}
 }
 
