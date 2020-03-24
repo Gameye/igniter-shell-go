@@ -14,11 +14,13 @@
         },
         "transitions": [
             {
+                "type": "command",
                 "from": "off",
                 "to": "on",
                 "command": "echo on"
             },
             {
+                "type": "command",
                 "from": "on",
                 "to": "off",
                 "command": "echo off"

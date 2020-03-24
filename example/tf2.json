@@ -40,10 +40,12 @@
         },
         "transitions": [
             {
+                "type": "command",
                 "to": "end",
                 "command": "echo 'Quit in 10 seconds ${message}'"
             },
             {
+                "type": "command",
                 "to": "quit",
                 "command": "quit"
             }
