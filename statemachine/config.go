@@ -21,12 +21,93 @@ TransitionConfigList list of TransitionConfig
 type TransitionConfigList []TransitionConfig
 
 /*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (config *TransitionConfigList) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var list []transitionConfigJSON
+	err = json.Unmarshal(data, &list)
+	if err != nil {
+		return
+	}
+
+	for _, item := range list {
+		*config = append(*config, item.Payload)
+	}
+
+	return
+}
+
+/*
 TransitionConfig is a transition from one state to another.
 */
-type TransitionConfig struct {
+type TransitionConfig interface{}
+
+/*
+CommandTransitionConfig transitions with a command
+*/
+type CommandTransitionConfig struct {
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Command string `json:"command"`
+}
+
+/*
+KillTransitionConfig transitions with a command
+*/
+type KillTransitionConfig struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+/*
+transitionConfigJSON helper
+*/
+type transitionConfigJSON struct {
+	Payload EventConfig
+}
+
+/*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (config *transitionConfigJSON) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var item struct {
+		Type string `json:"type"`
+	}
+
+	err = json.Unmarshal(data, &item)
+	if err != nil {
+		return
+	}
+
+	switch item.Type {
+
+	case "command":
+		var payload CommandTransitionConfig
+		err = json.Unmarshal(data, &payload)
+		if err != nil {
+			return
+		}
+		config.Payload = payload
+
+	case "kill":
+		var payload KillTransitionConfig
+		err = json.Unmarshal(data, &payload)
+		if err != nil {
+			return
+		}
+		config.Payload = payload
+
+	}
+
+	return
 }
 
 /*
@@ -54,7 +135,7 @@ func (config *EventConfigList) UnmarshalJSON(
 ) (
 	err error,
 ) {
-	var list []eventStateConfigJSON
+	var list []eventConfigJSON
 	err = json.Unmarshal(data, &list)
 	if err != nil {
 		return
@@ -163,16 +244,16 @@ func (target *TimerEventConfig) UnmarshalJSON(
 }
 
 /*
-eventStateConfigJSON helper
+eventConfigJSON helper
 */
-type eventStateConfigJSON struct {
+type eventConfigJSON struct {
 	Payload EventConfig
 }
 
 /*
 UnmarshalJSON provides custom unmarshalling
 */
-func (config *eventStateConfigJSON) UnmarshalJSON(
+func (config *eventConfigJSON) UnmarshalJSON(
 	data []byte,
 ) (
 	err error,
