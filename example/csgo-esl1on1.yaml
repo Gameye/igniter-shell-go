@@ -1,44 +1,44 @@
 cmd:
   - +ip
   - 0.0.0.0
-  - '-port'
-  - '${port.game}'
-  - '-tickrate'
-  - '${arg.tickRate}'
+  - "-port"
+  - "${port.game}"
+  - "-tickrate"
+  - "${arg.tickRate}"
   - +sv_setsteamaccount
-  - '${arg.steamToken}'
+  - "${arg.steamToken}"
   - +hostname
-  - '${arg.hostname}'
+  - "${arg.hostname}"
   - +mapgroup
-  - '${arg.mapgroup}'
+  - "${arg.mapgroup}"
   - +map
-  - '${arg.map}'
-  - '-maxplayers_override'
-  - '${arg.maxPlayers}'
+  - "${arg.map}"
+  - "-maxplayers_override"
+  - "${arg.maxPlayers}"
   - +tv_port
-  - '${port.gotv}'
+  - "${port.gotv}"
   - +tv_delay
-  - '${arg.gotvDelay}'
+  - "${arg.gotvDelay}"
   - +tv_maxclients
-  - '${arg.gotvMaxClients}'
+  - "${arg.gotvMaxClients}"
   - +sv_coaching_enabled
-  - '${arg.coachingMode}'
+  - "${arg.coachingMode}"
   - +tv_enable
-  - '1'
+  - "1"
   - +sv_hibernate_when_empty
-  - '0'
+  - "0"
   - +game_mode
-  - '${arg.gameMode}'
+  - "${arg.gameMode}"
   - +game_type
-  - '${arg.gameType}'
+  - "${arg.gameType}"
   - +host_workshop_map
-  - '${arg.workshopMap}'
-  - '-authkey'
-  - '${arg.authkey}'
-  - '-usercon'
+  - "${arg.workshopMap}"
+  - "-authkey"
+  - "${arg.authkey}"
+  - "-usercon"
   - +rcon_password
-  - '${arg.rconPassword}'
-  - '-nobots'
+  - "${arg.rconPassword}"
+  - "-nobots"
   - +sv_tags
   - hidden
 script:
@@ -72,11 +72,11 @@ script:
           ignoreCase: true
           nextState: error
         - type: literal
-          value: 'Server UGC Manager: Failed to get file info. HTTP status 401'
+          value: "Server UGC Manager: Failed to get file info. HTTP status 401"
           ignoreCase: true
           nextState: error
         - type: literal
-          value: 'map load failed: null not found or invalid'
+          value: "map load failed: null not found or invalid"
           ignoreCase: true
           nextState: error
         - type: timer
@@ -106,7 +106,8 @@ script:
           interval: 10000
           nextState: quit
   transitions:
-    - to: configure
+    - type: command
+      to: configure
       command: >
         echo "Configure..."
 
@@ -572,51 +573,56 @@ script:
 
 
         echo "Configure ready..."
-    - to: idle
+    - type: command
+      to: idle
       command: |
         echo "Idle..."
-    - to: playing
+    - type: command
+      to: playing
       command: |
         echo "Playing..."
-    - to: end
+    - type: command
+      to: end
       command: |
         echo "End..."
         say "The match has ended, thank you for playing!"
         say "This server will shutdown in 30 seconds"
-    - to: quit
+    - type: command
+      to: quit
       command: |
         echo "Quit..."
         quit
-    - to: error
+    - type: command
+      to: error
       command: |
         echo "Error..."
         quit
 
 defaults:
-  port.game: ''
-  port.gotv: ''
-  arg.tickRate: '128'
-  arg.steamToken: ''
+  port.game: ""
+  port.gotv: ""
+  arg.tickRate: "128"
+  arg.steamToken: ""
   arg.hostname: gameye.com Match Server
   arg.mapgroup: mg_active
   arg.map: de_dust2
-  arg.gameMode: '1'
-  arg.gameType: ''
-  arg.overtime: ''
-  arg.maxRounds: '15'
-  arg.roundTime: '1.92'
-  arg.maxPlayers: '12'
-  arg.maxSpectators: '2'
-  arg.warmupTime: '120'
-  arg.warmupTimeConnected: '60'
-  arg.freezeTime: '10'
-  arg.roundRestartDelay: '5'
-  arg.gotvDelay: ''
-  arg.gotvMaxClients: '10'
-  arg.coachingMode: ''
+  arg.gameMode: "1"
+  arg.gameType: ""
+  arg.overtime: ""
+  arg.maxRounds: "15"
+  arg.roundTime: "1.92"
+  arg.maxPlayers: "12"
+  arg.maxSpectators: "2"
+  arg.warmupTime: "120"
+  arg.warmupTimeConnected: "60"
+  arg.freezeTime: "10"
+  arg.roundRestartDelay: "5"
+  arg.gotvDelay: ""
+  arg.gotvMaxClients: "10"
+  arg.coachingMode: ""
   arg.teamNameOne: Counter Terrorists
   arg.teamNameTwo: Terrorists
-  arg.workshopMap: ''
-  arg.authkey: ''
-  arg.serverPassword: ''
-  arg.rconPassword: ''
+  arg.workshopMap: ""
+  arg.authkey: ""
+  arg.serverPassword: ""
+  arg.rconPassword: ""

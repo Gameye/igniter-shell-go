@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecodeStateMachineConfig(test *testing.T) {
+func TestDecodeRunnerConfig(test *testing.T) {
 	var err error
 	defer func() {
 		assert.NoError(test, err)
@@ -40,7 +40,7 @@ func makeLightTestConfig() (
 		InitialState: "Off",
 		States: map[string]StateConfig{
 			"On": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					LiteralEventConfig{
 						Value:     "SwitchOff",
 						NextState: "Off",
@@ -52,7 +52,7 @@ func makeLightTestConfig() (
 				},
 			},
 			"Off": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					RegexEventConfig{
 						Regexp:    regexp.MustCompile("^SwitchOn$"),
 						NextState: "On",
@@ -61,12 +61,12 @@ func makeLightTestConfig() (
 			},
 		},
 		Transitions: []TransitionConfig{
-			TransitionConfig{
+			CommandTransitionConfig{
 				From:    "Off",
 				To:      "On",
 				Command: "DoSwitchOn",
 			},
-			TransitionConfig{
+			CommandTransitionConfig{
 				From:    "On",
 				To:      "Off",
 				Command: "DoSwitchOff",
@@ -84,7 +84,7 @@ func makeAutoTestConfig() (
 		InitialState: "Off",
 		States: map[string]StateConfig{
 			"On": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					TimerEventConfig{
 						NextState: "Off",
 						Interval:  time.Duration(time.Second * 2),
@@ -92,7 +92,7 @@ func makeAutoTestConfig() (
 				},
 			},
 			"Off": StateConfig{
-				Events: []EventStateConfig{
+				Events: []EventConfig{
 					TimerEventConfig{
 						NextState: "On",
 						Interval:  time.Duration(time.Second * 2),
@@ -101,11 +101,11 @@ func makeAutoTestConfig() (
 			},
 		},
 		Transitions: []TransitionConfig{
-			TransitionConfig{
+			CommandTransitionConfig{
 				To:      "On",
 				Command: "echo on",
 			},
-			TransitionConfig{
+			CommandTransitionConfig{
 				To:      "Off",
 				Command: "echo off",
 			},

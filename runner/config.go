@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"encoding/json"
@@ -21,40 +21,14 @@ TransitionConfigList list of TransitionConfig
 type TransitionConfigList []TransitionConfig
 
 /*
-TransitionConfig is a transition from one state to another.
-*/
-type TransitionConfig struct {
-	From    string `json:"from"`
-	To      string `json:"to"`
-	Command string `json:"command"`
-}
-
-/*
-StateConfigMap map of StateConfig
-*/
-type StateConfigMap map[string]StateConfig
-
-/*
-StateConfig is a transition from one state to another.
-*/
-type StateConfig struct {
-	Events EventStateConfigList `json:"events"`
-}
-
-/*
-EventStateConfigList list of EventStateConfig
-*/
-type EventStateConfigList []EventStateConfig
-
-/*
 UnmarshalJSON provides custom unmarshalling
 */
-func (config *EventStateConfigList) UnmarshalJSON(
+func (config *TransitionConfigList) UnmarshalJSON(
 	data []byte,
 ) (
 	err error,
 ) {
-	var list []eventStateConfigJSON
+	var list []transitionConfigJSON
 	err = json.Unmarshal(data, &list)
 	if err != nil {
 		return
@@ -68,9 +42,116 @@ func (config *EventStateConfigList) UnmarshalJSON(
 }
 
 /*
-EventStateConfig is the configuration for an event
+TransitionConfig is a transition from one state to another.
 */
-type EventStateConfig interface{}
+type TransitionConfig interface{}
+
+/*
+CommandTransitionConfig transitions with a command
+*/
+type CommandTransitionConfig struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Command string `json:"command"`
+}
+
+/*
+ExitTransitionConfig transitions with a command
+*/
+type ExitTransitionConfig struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+/*
+transitionConfigJSON helper
+*/
+type transitionConfigJSON struct {
+	Payload EventConfig
+}
+
+/*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (config *transitionConfigJSON) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var item struct {
+		Type string `json:"type"`
+	}
+
+	err = json.Unmarshal(data, &item)
+	if err != nil {
+		return
+	}
+
+	switch item.Type {
+
+	case "command":
+		var payload CommandTransitionConfig
+		err = json.Unmarshal(data, &payload)
+		if err != nil {
+			return
+		}
+		config.Payload = payload
+
+	case "exit":
+		var payload ExitTransitionConfig
+		err = json.Unmarshal(data, &payload)
+		if err != nil {
+			return
+		}
+		config.Payload = payload
+
+	}
+
+	return
+}
+
+/*
+StateConfigMap map of StateConfig
+*/
+type StateConfigMap map[string]StateConfig
+
+/*
+StateConfig is a transition from one state to another.
+*/
+type StateConfig struct {
+	Events EventConfigList `json:"events"`
+}
+
+/*
+EventConfigList list of EventConfig
+*/
+type EventConfigList []EventConfig
+
+/*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (config *EventConfigList) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var list []eventConfigJSON
+	err = json.Unmarshal(data, &list)
+	if err != nil {
+		return
+	}
+
+	for _, item := range list {
+		*config = append(*config, item.Payload)
+	}
+
+	return
+}
+
+/*
+EventConfig is the configuration for an event
+*/
+type EventConfig interface{}
 
 /*
 LiteralEventConfig configures literal events
@@ -163,16 +244,16 @@ func (target *TimerEventConfig) UnmarshalJSON(
 }
 
 /*
-eventStateConfigJSON helper
+eventConfigJSON helper
 */
-type eventStateConfigJSON struct {
-	Payload EventStateConfig
+type eventConfigJSON struct {
+	Payload EventConfig
 }
 
 /*
 UnmarshalJSON provides custom unmarshalling
 */
-func (config *eventStateConfigJSON) UnmarshalJSON(
+func (config *eventConfigJSON) UnmarshalJSON(
 	data []byte,
 ) (
 	err error,

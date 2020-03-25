@@ -7,14 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Gameye/igniter-shell-go/statemachine"
+	"github.com/Gameye/igniter-shell-go/runner"
 	"github.com/kr/pty"
 )
 
-// RunWithStateMachine runs a command
-func RunWithStateMachine(
+// RunWithRunner runs a command
+func RunWithRunner(
 	cmd *exec.Cmd,
-	config *statemachine.Config,
+	config *runner.Config,
 	withPty bool,
 ) (
 	exit int,
@@ -39,7 +39,7 @@ func RunWithStateMachine(
 // runCommand runs a command
 func runCommand(
 	cmd *exec.Cmd,
-	config *statemachine.Config,
+	config *runner.Config,
 ) (
 	exit int,
 	err error,
@@ -80,10 +80,26 @@ func runCommand(
 	stderrLines := readLines(stderrTee)
 	outputLines := mergeLines(stdoutLines, stderrLines)
 
-	stateChanges := statemachine.Run(config, outputLines)
-	inputLines := selectStateCommand(stateChanges)
+	stateChanges := runner.Run(config, outputLines)
+
+	inputLines := make(chan string)
+	defer close(inputLines)
+	signals := make(chan os.Signal, 20)
+	defer close(signals)
 
 	// start routines
+
+	go func() {
+		for stateChangeUnknown := range stateChanges {
+			switch stateChange := stateChangeUnknown.(type) {
+			case runner.CommandStateChange:
+				inputLines <- stateChange.Command
+
+			case runner.ExitStateChange:
+				signals <- os.Interrupt
+			}
+		}
+	}()
 
 	go func() {
 		var err error
@@ -122,9 +138,6 @@ func runCommand(
 		return
 	}
 
-	signals := make(chan os.Signal, 20)
-	defer close(signals)
-
 	signal.Notify(signals)
 	defer signal.Stop(signals)
 
@@ -143,7 +156,7 @@ func runCommand(
 // runCommand runs a command in a pseudo terminal!
 func runCommandPTY(
 	cmd *exec.Cmd,
-	config *statemachine.Config,
+	config *runner.Config,
 ) (
 	exit int,
 	err error,
@@ -173,10 +186,26 @@ func runCommandPTY(
 	// setup pipeline
 
 	outputLines := readLines(ptyTee)
-	stateChanges := statemachine.Run(config, outputLines)
-	inputLines := selectStateCommand(stateChanges)
+	stateChanges := runner.Run(config, outputLines)
+
+	inputLines := make(chan string)
+	defer close(inputLines)
+	signals := make(chan os.Signal, 20)
+	defer close(signals)
 
 	// start routines
+
+	go func() {
+		for stateChangeUnknown := range stateChanges {
+			switch stateChange := stateChangeUnknown.(type) {
+			case runner.CommandStateChange:
+				inputLines <- stateChange.Command
+
+			case runner.ExitStateChange:
+				signals <- os.Interrupt
+			}
+		}
+	}()
 
 	go func() {
 		var err error
@@ -207,9 +236,6 @@ func runCommandPTY(
 	if err != nil {
 		return
 	}
-
-	signals := make(chan os.Signal, 20)
-	defer close(signals)
 
 	signal.Notify(signals)
 	defer signal.Stop(signals)

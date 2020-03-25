@@ -27,11 +27,13 @@
     },
     "transitions": [
         {
+            "type": "command",
             "from": "Off",
             "to": "On",
             "command": "DoSwitchOn"
         },
         {
+            "type": "command",
             "from": "On",
             "to": "Off",
             "command": "DoSwitchOff"

@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"strings"
@@ -8,13 +8,25 @@ import (
 /*
 StateChange contains information on a changes state
 */
-type StateChange struct {
+type StateChange interface{}
+
+/*
+CommandStateChange sends commands to the process
+*/
+type CommandStateChange struct {
 	NextState string
 	Command   string
 }
 
 /*
-Run runs a new StateMachine
+ExitStateChange should exit the process
+*/
+type ExitStateChange struct {
+	NextState string
+}
+
+/*
+Run runs a new Runner
 */
 func Run(
 	config *Config,
@@ -118,15 +130,12 @@ func pushState(
 	config *Config,
 	changeChannel chan<- StateChange,
 ) {
-	command := transition(
+	stateChange := transition(
 		nextState,
 		prevState,
 		config,
 	)
-	changeChannel <- StateChange{
-		nextState,
-		command,
-	}
+	changeChannel <- stateChange
 }
 
 func transition(
@@ -134,14 +143,30 @@ func transition(
 	prevState string,
 	config *Config,
 ) (
-	command string,
+	stateChange StateChange,
 ) {
-	for _, transition := range config.Transitions {
-		if (transition.From == prevState || transition.From == "") &&
-			(transition.To == nextState || transition.To == "") {
-			command = transition.Command
-			break
+	for _, transitionConfigUnknown := range config.Transitions {
+		switch transitionConfig := transitionConfigUnknown.(type) {
+		case CommandTransitionConfig:
+			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
+				(transitionConfig.To == nextState || transitionConfig.To == "") {
+				stateChange = CommandStateChange{
+					NextState: nextState,
+					Command:   transitionConfig.Command,
+				}
+				break
+			}
+
+		case ExitTransitionConfig:
+			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
+				(transitionConfig.To == nextState || transitionConfig.To == "") {
+				stateChange = ExitStateChange{
+					NextState: nextState,
+				}
+				break
+			}
 		}
+
 	}
 
 	return

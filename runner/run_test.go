@@ -1,4 +1,4 @@
-package statemachine
+package runner
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLightStateMachine(test *testing.T) {
+func TestLightRunner(test *testing.T) {
 	config := makeLightTestConfig()
 
 	actionChannel := make(chan string, 1)
@@ -19,32 +19,32 @@ func TestLightStateMachine(test *testing.T) {
 	)
 
 	actionChannel <- "SwitchOn"
-	assert.Equal(test, StateChange{
+	assert.Equal(test, CommandStateChange{
 		"On",
 		"DoSwitchOn",
 	}, <-changeChannel)
 
 	actionChannel <- "SwitchOff"
-	assert.Equal(test, StateChange{
+	assert.Equal(test, CommandStateChange{
 		"Off",
 		"DoSwitchOff",
 	}, <-changeChannel)
 
 	actionChannel <- "SwitchOn"
-	assert.Equal(test, StateChange{
+	assert.Equal(test, CommandStateChange{
 		"On",
 		"DoSwitchOn",
 	}, <-changeChannel)
 
 	time.Sleep(time.Second * 2)
-	assert.Equal(test, StateChange{
+	assert.Equal(test, CommandStateChange{
 		"Off",
 		"DoSwitchOff",
 	}, <-changeChannel)
 
 }
 
-func TestAutoStateMachine(test *testing.T) {
+func TestAutoRunner(test *testing.T) {
 	config := makeAutoTestConfig()
 
 	actionChannel := make(chan string)
@@ -66,7 +66,7 @@ func TestAutoStateMachine(test *testing.T) {
 		return
 	}
 
-	assert.Equal(test, StateChange{"On", "echo on"}, <-changeChannel)
+	assert.Equal(test, CommandStateChange{"On", "echo on"}, <-changeChannel)
 
 	actionChannel <- "noop"
 	timer = time.NewTimer(time.Second * 1)
@@ -77,5 +77,5 @@ func TestAutoStateMachine(test *testing.T) {
 		return
 	}
 
-	assert.Equal(test, StateChange{"Off", "echo off"}, <-changeChannel)
+	assert.Equal(test, CommandStateChange{"Off", "echo off"}, <-changeChannel)
 }
