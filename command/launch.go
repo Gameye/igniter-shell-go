@@ -142,13 +142,14 @@ func renderConfigTemplate(
 		)
 	}
 
-	for _, transitionConfigUnknown := range config.Script.Transitions {
+	for index, transitionConfigUnknown := range config.Script.Transitions {
 		switch transitionConfig := transitionConfigUnknown.(type) {
 		case runner.CommandTransitionConfig:
 			transitionConfig.Command = utils.RenderTemplate(
 				transitionConfig.Command,
 				variables,
 			)
+			config.Script.Transitions[index] = transitionConfig
 		}
 	}
 }
