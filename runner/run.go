@@ -19,9 +19,9 @@ type CommandStateChange struct {
 }
 
 /*
-ExitStateChange should exit the process
+KillStateChange should kill the process
 */
-type ExitStateChange struct {
+type KillStateChange struct {
 	NextState string
 }
 
@@ -157,10 +157,10 @@ func transition(
 				break
 			}
 
-		case ExitTransitionConfig:
+		case KillTransitionConfig:
 			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
 				(transitionConfig.To == nextState || transitionConfig.To == "") {
-				stateChange = ExitStateChange{
+				stateChange = KillStateChange{
 					NextState: nextState,
 				}
 				break

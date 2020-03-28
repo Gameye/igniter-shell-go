@@ -95,8 +95,8 @@ func runCommand(
 			case runner.CommandStateChange:
 				inputLines <- stateChange.Command
 
-			case runner.ExitStateChange:
-				signals <- os.Interrupt
+			case runner.KillStateChange:
+				signals <- os.Kill
 			}
 		}
 	}()
@@ -201,8 +201,8 @@ func runCommandPTY(
 			case runner.CommandStateChange:
 				inputLines <- stateChange.Command
 
-			case runner.ExitStateChange:
-				signals <- os.Interrupt
+			case runner.KillStateChange:
+				signals <- os.Kill
 			}
 		}
 	}()
