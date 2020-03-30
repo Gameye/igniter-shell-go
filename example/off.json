@@ -16,7 +16,7 @@
                     {
                         "type": "timer",
                         "interval": 2000,
-                        "nextState": "exit"
+                        "nextState": "kill"
                     }
                 ]
             }
@@ -35,8 +35,8 @@
                 "command": "echo off"
             },
             {
-                "type": "exit",
-                "to": "exit"
+                "type": "kill",
+                "to": "kill"
             }
         ]
     }
