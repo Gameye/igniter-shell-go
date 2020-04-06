@@ -1,0 +1,24 @@
+script:
+  initialState: initial
+  states:
+    initial:
+      events:
+        - type: timer
+          nextState: end
+          interval: 5000
+    end:
+      events:
+        - type: timer
+          nextState: quit
+          interval: 1000
+  transitions:
+    - type: command
+      to: end
+      command: |
+        echo "Initial"
+    - type: command
+      to: end
+      command: |
+        echo "End..."
+    - type: kill
+      to: quit
