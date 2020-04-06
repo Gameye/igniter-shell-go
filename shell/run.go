@@ -96,7 +96,7 @@ func runCommand(
 				inputLines <- stateChange.Command
 
 			case runner.KillStateChange:
-				signals <- os.Kill
+				cmd.Process.Kill()
 			}
 		}
 	}()
