@@ -2,6 +2,7 @@ package runner
 
 import (
 	"encoding/json"
+	"os"
 	"regexp"
 	"time"
 )
@@ -56,11 +57,20 @@ type CommandTransitionConfig struct {
 }
 
 /*
-KillTransitionConfig transitions with a command
+KillTransitionConfig transitions by killing the process
 */
 type KillTransitionConfig struct {
 	From string `json:"from"`
 	To   string `json:"to"`
+}
+
+/*
+SignalTransitionConfig transitions with a signal
+*/
+type SignalTransitionConfig struct {
+	From   string    `json:"from"`
+	To     string    `json:"to"`
+	Signal os.Signal `json:"signal"`
 }
 
 /*
@@ -91,6 +101,14 @@ func (config *transitionConfigJSON) UnmarshalJSON(
 
 	case "command":
 		var payload CommandTransitionConfig
+		err = json.Unmarshal(data, &payload)
+		if err != nil {
+			return
+		}
+		config.Payload = payload
+
+	case "signal":
+		var payload SignalTransitionConfig
 		err = json.Unmarshal(data, &payload)
 		if err != nil {
 			return

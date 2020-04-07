@@ -20,5 +20,6 @@ script:
       to: end
       command: |
         echo "End..."
-    - type: kill
+    - type: signal
       to: quit
+      signal: SIGINT
