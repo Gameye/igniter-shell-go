@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"os"
 	"strings"
 	"time"
 )
@@ -19,7 +20,15 @@ type CommandStateChange struct {
 }
 
 /*
-KillStateChange should kill the process
+SignalStateChange sends a signal to the process
+*/
+type SignalStateChange struct {
+	NextState string
+	Signal    os.Signal
+}
+
+/*
+KillStateChange kills the process
 */
 type KillStateChange struct {
 	NextState string
@@ -153,6 +162,16 @@ func transition(
 				stateChange = CommandStateChange{
 					NextState: nextState,
 					Command:   transitionConfig.Command,
+				}
+				break
+			}
+
+		case SignalTransitionConfig:
+			if (transitionConfig.From == prevState || transitionConfig.From == "") &&
+				(transitionConfig.To == nextState || transitionConfig.To == "") {
+				stateChange = SignalStateChange{
+					NextState: nextState,
+					Signal:    transitionConfig.Signal,
 				}
 				break
 			}

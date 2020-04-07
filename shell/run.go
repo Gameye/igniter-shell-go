@@ -95,6 +95,9 @@ func runCommand(
 			case runner.CommandStateChange:
 				inputLines <- stateChange.Command
 
+			case runner.SignalStateChange:
+				signals <- stateChange.Signal
+
 			case runner.KillStateChange:
 				cmd.Process.Kill()
 			}
@@ -200,6 +203,9 @@ func runCommandPTY(
 			switch stateChange := stateChangeUnknown.(type) {
 			case runner.CommandStateChange:
 				inputLines <- stateChange.Command
+
+			case runner.SignalStateChange:
+				signals <- stateChange.Signal
 
 			case runner.KillStateChange:
 				cmd.Process.Kill()
