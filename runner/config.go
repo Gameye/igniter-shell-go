@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"regexp"
+	"syscall"
 	"time"
 )
 
@@ -71,6 +72,109 @@ type SignalTransitionConfig struct {
 	From   string    `json:"from"`
 	To     string    `json:"to"`
 	Signal os.Signal `json:"signal"`
+}
+
+/*
+UnmarshalJSON provides custom unmarshalling
+*/
+func (target *SignalTransitionConfig) UnmarshalJSON(
+	data []byte,
+) (
+	err error,
+) {
+	var source struct {
+		From   string `json:"from"`
+		To     string `json:"to"`
+		Signal string `json:"signal"`
+	}
+
+	err = json.Unmarshal(data, &source)
+	if err != nil {
+		return
+	}
+
+	var signal os.Signal
+	switch source.Signal {
+
+	case "SIGABRT":
+		signal = syscall.Signal(0x6)
+	case "SIGALRM":
+		signal = syscall.Signal(0xe)
+	case "SIGBUS":
+		signal = syscall.Signal(0x7)
+	case "SIGCHLD":
+		signal = syscall.Signal(0x11)
+	case "SIGCLD":
+		signal = syscall.Signal(0x11)
+	case "SIGCONT":
+		signal = syscall.Signal(0x12)
+	case "SIGFPE":
+		signal = syscall.Signal(0x8)
+	case "SIGHUP":
+		signal = syscall.Signal(0x1)
+	case "SIGILL":
+		signal = syscall.Signal(0x4)
+	case "SIGINT":
+		signal = syscall.Signal(0x2)
+	case "SIGIO":
+		signal = syscall.Signal(0x1d)
+	case "SIGIOT":
+		signal = syscall.Signal(0x6)
+	case "SIGKILL":
+		signal = syscall.Signal(0x9)
+	case "SIGPIPE":
+		signal = syscall.Signal(0xd)
+	case "SIGPOLL":
+		signal = syscall.Signal(0x1d)
+	case "SIGPROF":
+		signal = syscall.Signal(0x1b)
+	case "SIGPWR":
+		signal = syscall.Signal(0x1e)
+	case "SIGQUIT":
+		signal = syscall.Signal(0x3)
+	case "SIGSEGV":
+		signal = syscall.Signal(0xb)
+	case "SIGSTKFLT":
+		signal = syscall.Signal(0x10)
+	case "SIGSTOP":
+		signal = syscall.Signal(0x13)
+	case "SIGSYS":
+		signal = syscall.Signal(0x1f)
+	case "SIGTERM":
+		signal = syscall.Signal(0xf)
+	case "SIGTRAP":
+		signal = syscall.Signal(0x5)
+	case "SIGTSTP":
+		signal = syscall.Signal(0x14)
+	case "SIGTTIN":
+		signal = syscall.Signal(0x15)
+	case "SIGTTOU":
+		signal = syscall.Signal(0x16)
+	case "SIGUNUSED":
+		signal = syscall.Signal(0x1f)
+	case "SIGURG":
+		signal = syscall.Signal(0x17)
+	case "SIGUSR1":
+		signal = syscall.Signal(0xa)
+	case "SIGUSR2":
+		signal = syscall.Signal(0xc)
+	case "SIGVTALRM":
+		signal = syscall.Signal(0x1a)
+	case "SIGWINCH":
+		signal = syscall.Signal(0x1c)
+	case "SIGXCPU":
+		signal = syscall.Signal(0x18)
+	case "SIGXFSZ":
+		signal = syscall.Signal(0x19)
+	}
+
+	*target = SignalTransitionConfig{
+		From:   source.From,
+		To:     source.To,
+		Signal: signal,
+	}
+
+	return
 }
 
 /*
